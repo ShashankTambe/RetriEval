@@ -85,15 +85,39 @@ This is early, and honest about it:
 - **Bring your own repo.** There's no bundled sample yet (planned); today you
   point it at code you already have.
 
-## How it works, in one breath
+## How it works
 
-sandbox the repo, derive a mechanical answer key (ts-morph), generate and load
-questions (tagged by author), run every retriever over every query variant while
-timing each, score file-level precision/recall plus real token counts, then
-report per retriever, per category, and per paraphrase-overlap bucket, with a
-fairness pass.
+Every run executes a fixed pipeline against a sandboxed copy of the target repo,
+so the original is never modified:
 
-The design decisions behind all of that live in [DESIGN.md](DESIGN.md).
+1. **Analyze.** A ts-morph static pass derives the mechanical answer key: symbol
+   definitions, import edges, the call graph, and cross-file references.
+2. **Author.** Questions are assembled from that answer key and tagged by source
+   (human, generated, or model), then expanded into query variants that differ
+   in how much they lexically overlap the code.
+3. **Retrieve.** Each retriever runs against every variant, and every call is
+   individually timed.
+4. **Score.** Results are graded for file-level precision and recall, with real
+   token counts recorded per query.
+5. **Report.** Metrics are aggregated per retriever, per category, and per
+   overlap bucket, followed by a fairness pass over question authorship.
+
+## What's next
+
+Planned for a future version:
+
+- **A bundled sample repo**, so a fresh clone produces a score with zero setup and
+  no need to bring your own code.
+- **Git-history mining.** Turn real issues and their fix commits into questions
+  whose answer is the set of files the fix actually touched, drawn straight from
+  version control instead of generated.
+- **A local, open-source question author.** Use a fully local model to write the
+  human-style questions. That removes the CLI login requirement and the
+  home-field bias that comes from letting a contestant's own model set the exam.
+- **A vector-search baseline** alongside grep and whole-file, so embedding-based
+  retrieval sits on the same scoreboard.
+- **More languages.** The answer key is TypeScript and JavaScript only today;
+  other languages need their own static-analysis pass.
 
 ## License
 

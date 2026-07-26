@@ -14,12 +14,11 @@ eval-results/
 # rule below (e.g. `!answer-key/sample-app/`).
 answer-key/*/
 
-# Private working docs, contain numbers/names derived from a closed-source app.
-# The public design write-up is DESIGN.md; scrub + un-ignore these if you want
-# any of them published.
-VISION.md
-DECISIONS.md
-HANDOFF_MAPPING.md
+# Markdown docs are kept out of the repo; only the README is published.
+# (This also covers private working docs like VISION/DECISIONS derived from a
+# closed-source app.)
+*.md
+!README.md
 
 # Private-app-specific one-off scripts (hard-wired paths to a closed-source repo).
 # Not used by the core harness; kept local.
