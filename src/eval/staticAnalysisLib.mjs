@@ -1,5 +1,5 @@
 /**
- * Independent static analysis (library form) — the MECHANICAL answer key.
+ * Independent static analysis (library form), the MECHANICAL answer key.
  *
  * Plain-JS/ESM port of tools/staticAnalysis.ts so the pipeline can call it
  * IN-PROCESS (no `npx tsx` child process), which is required for the packaged

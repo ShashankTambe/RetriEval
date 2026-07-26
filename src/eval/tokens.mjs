@@ -1,5 +1,5 @@
 /**
- * Token counting — REAL tokenizer (gpt-tokenizer, o200k_base BPE, pure JS so it
+ * Token counting, REAL tokenizer (gpt-tokenizer, o200k_base BPE, pure JS so it
  * works inside the packaged .exe). Counts are absolute, not estimates.
  *
  * A memo cache dedupes repeated counts (the whole-file baseline re-tokenizes

@@ -1,18 +1,18 @@
 /**
- * Question bank — the "question setter" assembly (DECISIONS.md §D).
+ * Question bank, the "question setter" assembly (DECISIONS.md §D).
  *
  * Merges three provenance-tagged strata, reported SEPARATELY downstream so a
  * clean human ruler is never hidden behind an average:
- *   - control   (author: human)      — the curated gold seed. Doubles as the
+ *   - control   (author: human):      the curated gold seed. Doubles as the
  *                                       neutral ruler AND the dialect exemplars.
- *   - generated (author: mechanical)  — ts-morph templated questions, deterministic.
- *   - llm       (author: <model>)     — styleguided, answer-anchored authoring,
+ *   - generated (author: mechanical):  ts-morph templated questions, deterministic.
+ *   - llm       (author: <model>):     styleguided, answer-anchored authoring,
  *                                       FROZEN to disk by tools/authorQuestions.mjs
  *                                       and loaded here. The eval never invokes an
- *                                       LLM live — that would break determinism.
+ *                                       LLM live, that would break determinism.
  *
  * Every question is answer-anchored to the mechanical dump (control/llm by
- * construction; generated because it IS the dump) — the answer never comes from
+ * construction; generated because it IS the dump), the answer never comes from
  * a contestant. This function is fully deterministic: it only reads frozen files.
  */
 import { readFileSync, existsSync } from "node:fs";

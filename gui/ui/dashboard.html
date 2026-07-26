@@ -3,9 +3,9 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>RetriEval — LessTokenify Evaluator</title>
+    <title>RetriEval, LessTokenify Evaluator</title>
     <style>
-      /* Claude palette — coral accent on warm ivory (light) / warm charcoal (dark) */
+      /* Claude palette, coral accent on warm ivory (light) / warm charcoal (dark) */
       :root {
         --bg: #F5F4EE; --panel: #FCFBF7; --ink: #2A2925; --muted: #6E675C;
         --line: #E6E1D6; --accent: #D97757; --good: #3C8C5F; --warn: #B8860B;
@@ -159,7 +159,7 @@
       .modal input { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
       .modal input:hover { border-color:var(--accent); }
       .modal input:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); outline:none; }
-      /* dropdowns that actually LOOK like dropdowns — chevron + ring + shadow */
+      /* dropdowns that actually LOOK like dropdowns, chevron + ring + shadow */
       .selwrap { position:relative; display:block; }
       .selwrap::after { content:""; position:absolute; right:13px; top:50%; width:11px; height:11px; transform:translateY(-60%) rotate(45deg); border:2px solid var(--muted); border-top:0; border-left:0; pointer-events:none; transition:border-color .15s ease; }
       .selwrap:hover::after { border-color:var(--accent); }
@@ -173,7 +173,7 @@
       <header>
         <div>
           <h1>RetriEval</h1>
-          <div class="sub">retrieval evaluator — LessTokenify vs baselines</div>
+          <div class="sub">retrieval evaluator, LessTokenify vs baselines</div>
         </div>
         <div class="spacer"></div>
         <span id="repoPath" class="repo hidden" title="Click to choose a different repository"></span>
@@ -204,7 +204,7 @@
               <th title="Median time to retrieve context for one query. No LLM time included.">Speed (median)</th>
               <th title="How much context it hands the LLM per query (o200k tokens). Fewer = cheaper.">Tokens / query</th>
               <th title="Token savings compared to reading the whole matched files.">vs whole-file</th>
-              <th style="opacity:.6" title="The weighted per-category benchmark score — secondary summary metric.">Composite</th>
+              <th style="opacity:.6" title="The weighted per-category benchmark score, secondary summary metric.">Composite</th>
             </tr></thead>
             <tbody id="cmpBody"></tbody>
           </table>
@@ -212,7 +212,7 @@
         </div>
 
         <div class="panel">
-          <h2>Paraphrase robustness — recall by how much the query names the code</h2>
+          <h2>Paraphrase robustness, recall by how much the query names the code</h2>
           <div class="legend" id="olLegend"></div>
           <div id="overlaps"></div>
           <div class="note" id="olNote"></div>
@@ -245,7 +245,7 @@
       <div id="hero" class="panel herobox">
         <div class="hero-title" id="heroTitle">Benchmark a repository's code retrieval</div>
         <div class="hero-steps" id="heroSteps">
-          <div class="step"><span class="stepnum">1</span> Pick any TypeScript/JavaScript repo — it is copied to a sandbox, never modified</div>
+          <div class="step"><span class="stepnum">1</span> Pick any TypeScript/JavaScript repo, it is copied to a sandbox, never modified</div>
           <div class="step"><span class="stepnum">2</span> RetriEval builds its own answer key from the code, then quizzes LessTokenify, grep and whole-file reading on it</div>
           <div class="step"><span class="stepnum">3</span> Read the verdict: who finds the right code, at what speed and token cost</div>
         </div>
@@ -258,7 +258,7 @@
       </div>
 
       <div class="panel hidden" id="agentPanel">
-        <h2>Agent retrievers — bring your own <span class="tag">non-deterministic</span></h2>
+        <h2>Agent retrievers, bring your own <span class="tag">non-deterministic</span></h2>
         <p class="note" style="margin-top:0">
           Pit an LLM agent (your own <code>claude</code>/<code>codex</code>) against the same answer key, on a
           <b>sample</b> of the questions. Measures two axes: retrieval quality <i>and</i> cost-of-searching
@@ -277,12 +277,12 @@
         <p class="note" style="margin-top:0">This only <b>adds a card</b>. Nothing runs until you press Run on the card.</p>
         <label class="fld"><span>Provider</span>
           <div class="selwrap"><select id="mProvider">
-            <option value="claude">Claude — claude CLI</option>
-            <option value="codex">Codex — codex CLI</option>
+            <option value="claude">Claude, claude CLI</option>
+            <option value="codex">Codex, codex CLI</option>
           </select></div>
         </label>
         <label class="fld"><span>Model <em>(optional)</em></span>
-          <input id="mModel" type="text" placeholder="provider default — e.g. Claude Opus 4.8" list="modelList" />
+          <input id="mModel" type="text" placeholder="provider default, e.g. Claude Opus 4.8" list="modelList" />
           <datalist id="modelList">
             <option value="claude-opus-4-8">Claude Opus 4.8</option>
             <option value="claude-sonnet-5">Claude Sonnet 5</option>
@@ -308,10 +308,10 @@
         <div class="pop-title">Sign in to <span id="lgProvider">Claude</span></div>
         <p class="note" style="margin-top:0">
           A terminal window will open and run <code id="lgCmd">claude auth login</code>. Your browser then opens for you
-          to sign in to your account. Signing in is free — nothing is billed until you actually run a retriever.
+          to sign in to your account. Signing in is free, nothing is billed until you actually run a retriever.
         </p>
         <div id="lgWaiting" class="warnbox hidden" style="margin:4px 0 0">
-          Terminal opened. Finish signing in in your browser — this closes itself once you're signed in, then press
+          Terminal opened. Finish signing in in your browser, this closes itself once you're signed in, then press
           <b>Run</b> on the card.
         </div>
         <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
@@ -367,7 +367,7 @@
         const hasLT = rep.retrievers.includes("lesstokenify");
         if (!rep.retrievers.includes(missRetriever)) missRetriever = primary;
 
-        // comparison table — raw metrics first-class (VISION.md)
+        // comparison table, raw metrics first-class (VISION.md)
         const body = $("cmpBody");
         body.innerHTML = "";
         const fmtMs = (x) => (x == null ? "–" : x >= 1000 ? (x / 1000).toFixed(1) + " s" : Math.round(x) + " ms");
@@ -382,7 +382,7 @@
             `<td>${pctS(h.mean_precision_pct)}</td>` +
             `<td>${fmtMs(h.median_latency_ms)}${n === "lesstokenify" && h.index_build_ms ? `<span class="tag" title="one-time index build">+${fmtMs(h.index_build_ms)} build</span>` : ""}</td>` +
             `<td>${h.mean_context_tokens?.toLocaleString() ?? "–"}</td>` +
-            `<td>${n === rep.baselineRetriever ? "—" : pctS(h.token_reduction_pct) + " fewer"}</td>` +
+            `<td>${n === rep.baselineRetriever ? "baseline" : pctS(h.token_reduction_pct) + " fewer"}</td>` +
             `<td style="opacity:.6">${pctS(h.mean_score_pct)}</td>`;
           body.appendChild(tr);
         }
@@ -410,7 +410,7 @@
           b.textContent = txt;
           $("plain").textContent = plain;
         } else {
-          // neutral harness view — no LessTokenify in this run
+          // neutral harness view, no LessTokenify in this run
           const leader = rep.retrievers.reduce((m, n) => (S[n].headline.mean_recall_pct > S[m].headline.mean_recall_pct ? n : m), rep.retrievers[0]);
           b.className = "badge";
           b.textContent = "Comparison";
@@ -426,9 +426,9 @@
         olBox.innerHTML = "";
         $("olLegend").innerHTML = rep.retrievers.map((n) => `<span><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span>`).join("");
         const OL = [
-          { key: "exact", label: "Exact — query contains the symbol/file name", hint: "easiest: any lexical tool should win" },
-          { key: "partial", label: "Partial — only word fragments of the name", hint: "e.g. “add lead” for addLead" },
-          { key: "none", label: "None — describes behavior, names nothing", hint: "the paraphrase blind-spot test" },
+          { key: "exact", label: "Exact, query contains the symbol/file name", hint: "easiest: any lexical tool should win" },
+          { key: "partial", label: "Partial, only word fragments of the name", hint: "e.g. “add lead” for addLead" },
+          { key: "none", label: "None, describes behavior, names nothing", hint: "the paraphrase blind-spot test" },
         ];
         let anyNone = false;
         for (const o of OL) {
@@ -442,12 +442,12 @@
             rows += `<div class="gbar"><span class="lbl">${label(n)}</span><span class="track"><i style="width:${s ?? 0}%;background:${RCOLOR[n]}"></i></span><span class="val">${s == null ? "–" : Math.round(s) + "%"}</span></div>`;
           }
           const n0 = (S[primary].by_overlap || {})[o.key]?.n || 0;
-          el.innerHTML = `<div class="name">${o.label} <span class="tag">${n0} queries</span> <span style="color:var(--muted);font-weight:400">— ${o.hint}</span></div>${rows}`;
+          el.innerHTML = `<div class="name">${o.label} <span class="tag">${n0} queries</span> <span style="color:var(--muted);font-weight:400">,  ${o.hint}</span></div>${rows}`;
           olBox.appendChild(el);
         }
         $("olNote").textContent = anyNone
-          ? `Recall per bucket. If all retrievers collapse on “none”, retrieval is purely lexical — queries that describe behavior without naming code will miss. This is the panel that keeps the benchmark honest.`
-          : `No zero-overlap (“none”) paraphrases available for this repo — they come from the curated control set or LLM-authored questions. Buckets shown are mechanical only.`;
+          ? `Recall per bucket. If all retrievers collapse on “none”, retrieval is purely lexical, queries that describe behavior without naming code will miss. This is the panel that keeps the benchmark honest.`
+          : `No zero-overlap (“none”) paraphrases available for this repo, they come from the curated control set or LLM-authored questions. Buckets shown are mechanical only.`;
 
         // legend
         $("legend").innerHTML = rep.retrievers.map((n) => `<span><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span>`).join("");
@@ -466,7 +466,7 @@
             rows += `<div class="gbar"><span class="lbl">${label(n)}</span><span class="track"><i style="width:${Math.round(s*100)}%;background:${RCOLOR[n]}"></i></span><span class="val">${Math.round(s*100)}%</span></div>`;
           }
           const n0 = cats && (S[primary].by_category[c]?.n || "");
-          el.innerHTML = `<div class="name">${c} <span class="tag">${n0} Qs</span> <span style="color:var(--muted);font-weight:400">— ${catSay[c]||""}</span></div>${rows}`;
+          el.innerHTML = `<div class="name">${c} <span class="tag">${n0} Qs</span> <span style="color:var(--muted);font-weight:400">,  ${catSay[c]||""}</span></div>${rows}`;
           cbox.appendChild(el);
         }
 
@@ -541,7 +541,7 @@
         const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
         const c = rep.questionCounts || {};
         $("fairIntro").innerHTML =
-          `Recall per retriever, split by who <b>wrote</b> the question — reported separately so the human ruler is never hidden behind an average. ` +
+          `Recall per retriever, split by who <b>wrote</b> the question, reported separately so the human ruler is never hidden behind an average. ` +
           `Bank: ${c.control || 0} control · ${c.generated || 0} generated · ${c.llm || 0} llm-authored.`;
 
         $("fairHead").innerHTML = `<th>Retriever</th>` + strata.map((s) => `<th>${STRAT_LABEL[s]}</th>`).join("");
@@ -560,7 +560,7 @@
 
         const bits = [];
         const g = f.easiness && f.easiness.generated;
-        if (g) bits.push(`Generated questions run <b>${g.gap_pct >= 0 ? "+" : ""}${g.gap_pct}pp</b> easier than the human control set (${pctS(g.stratum_recall_pct)} vs ${pctS(g.control_recall_pct)} mean recall) — the auto-questions flatter every retriever.`);
+        if (g) bits.push(`Generated questions run <b>${g.gap_pct >= 0 ? "+" : ""}${g.gap_pct}pp</b> easier than the human control set (${pctS(g.stratum_recall_pct)} vs ${pctS(g.control_recall_pct)} mean recall), the auto-questions flatter every retriever.`);
         if (f.home_field && f.home_field.length)
           for (const h of f.home_field) bits.push(`Home-field: ${esc(h.author)} scores <b>${h.delta_pct >= 0 ? "+" : ""}${h.delta_pct}pp</b> on its own questions vs the human control (${pctS(h.own_recall_pct)} vs ${pctS(h.control_recall_pct)}).`);
         else if (f.note) bits.push(f.note);
@@ -638,18 +638,18 @@
         for (const card of agentCards) box.appendChild(agentCardEl(card));
       }
 
-      // The same depth LT/lexical get — overlap buckets, per-category recall, worst misses —
+      // The same depth LT/lexical get, overlap buckets, per-category recall, worst misses, 
       // rendered inside the agent card from the per-question rows the run returned.
       function agentDetailHtml(r) {
         const bar = (label, pct) =>
           `<div class="gbar"><span class="lbl">${esc(label)}</span><span class="track"><i style="width:${pct == null ? 0 : pct}%;background:${barColor((pct || 0) / 100)}"></i></span><span class="val">${pct == null ? "–" : Math.round(pct) + "%"}</span></div>`;
 
         let overlapHtml = "";
-        const OL = [["exact", "Exact — names the code"], ["partial", "Partial — word fragments"], ["none", "None — behavior only"]];
+        const OL = [["exact", "Exact, names the code"], ["partial", "Partial, word fragments"], ["none", "None, behavior only"]];
         const bo = r.by_overlap || {};
         if (OL.some(([k]) => bo[k])) {
           overlapHtml =
-            `<div class="adetail-h">Recall by paraphrase overlap <span style="color:var(--muted);font-weight:400">— does the agent beat lexical on “none”?</span></div>` +
+            `<div class="adetail-h">Recall by paraphrase overlap <span style="color:var(--muted);font-weight:400">,  does the agent beat lexical on “none”?</span></div>` +
             OL.filter(([k]) => bo[k]).map(([k, l]) => bar(`${l} (${bo[k].n})`, bo[k].recall_pct)).join("");
         }
 
@@ -668,10 +668,10 @@
         let missHtml = "";
         if (misses.length) {
           missHtml =
-            `<details class="amiss"><summary>Worst ${misses.length} queries — what it returned vs. the right answer</summary>` +
+            `<details class="amiss"><summary>Worst ${misses.length} queries, what it returned vs. the right answer</summary>` +
             misses.map((m) =>
               `<div class="miss"><div class="q">${esc(m.query)} <span class="tag">${esc(m.category)}</span>${m.overlap ? ` <span class="tag">${m.overlap}-overlap</span>` : ""} <span class="big" style="color:${barColor(m.recall)}">${Math.round(m.recall * 100)}%</span></div>` +
-              `<div class="row"><span class="k">returned</span><span class="v">${esc((m.returned || []).map((f) => f.split("/").pop()).join(", ") || "—")}</span></div>` +
+              `<div class="row"><span class="k">returned</span><span class="v">${esc((m.returned || []).map((f) => f.split("/").pop()).join(", ") || "none")}</span></div>` +
               `<div class="row"><span class="k">correct</span><span class="v">${esc((m.answer_text || "").slice(0, 160))}</span></div></div>`,
             ).join("") +
             `</details>`;
@@ -702,9 +702,9 @@
         }
         const canRun = !!CURRENT; // needs a completed benchmark (sandbox + questions)
         let status = "";
-        if (card.running) status = `<div class="astatus">Live — the agent is searching (spends your tokens):</div><div id="live-${card.id}">${liveHtml(card.live || {})}</div>`;
+        if (card.running) status = `<div class="astatus">Live, the agent is searching (spends your tokens):</div><div id="live-${card.id}">${liveHtml(card.live || {})}</div>`;
         else if (card.error) status = `<div class="astatus" style="color:var(--bad)">${esc(card.error)}</div>`;
-        else if (!canRun && !card.result) status = `<div class="astatus">Queued — press <b>Run evaluation</b> first, then this card can run against the same questions.</div>`;
+        else if (!canRun && !card.result) status = `<div class="astatus">Queued, press <b>Run evaluation</b> first, then this card can run against the same questions.</div>`;
 
         el.innerHTML =
           `<div class="ahead">` +
@@ -730,7 +730,7 @@
         }
         if (st.loggedIn === false) { openLoginModal(card.provider); return; }
 
-        // Logged in (or unknown for codex) → run. No confirm popup — the red quota
+        // Logged in (or unknown for codex) → run. No confirm popup, the red quota
         // warning is already on the card; the user opted in by adding + pressing Run.
         const sample = sampleForAgent(CURRENT, 40);
         card.running = true; card.error = null;
@@ -754,7 +754,7 @@
       // ── provider / effort option data (truthful to the real CLIs) ─────────
       const PROVIDER_LABEL = { claude: "Claude", codex: "Codex" };
       // claude --effort accepts exactly: low, medium, high, xhigh, max. There is no
-      // "extra"/"ultracode" effort — xhigh IS extra-high; ultracode is a separate mode.
+      // "extra"/"ultracode" effort, xhigh IS extra-high; ultracode is a separate mode.
       const EFFORTS = {
         claude: [["", "Provider default"], ["low", "Low"], ["medium", "Medium"], ["high", "High"], ["xhigh", "Extra-high (xhigh)"], ["max", "Max"]],
         codex: [["", "Provider default"]],
@@ -798,7 +798,7 @@
         const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
         const p = (x) => (x == null ? "–" : Math.round(x) + "%");
         const primary = rep.retrievers.includes("lesstokenify") ? "lesstokenify" : rep.retrievers[0];
-        let md = `# RetriEval report — ${rep.repo.name}\n\n`;
+        let md = `# RetriEval report, ${rep.repo.name}\n\n`;
         md += `- Repository: \`${rep.repo.root}\`\n`;
         md += `- Files: ${rep.repo.files} · Symbols: ${rep.repo.symbols}\n`;
         md += `- Questions: ${S[primary].counts.total} query variants (${rep.curatedCount || 0} curated)\n`;
@@ -809,9 +809,9 @@
         for (const n of rep.retrievers) {
           const h = S[n].headline;
           const spd = `${h.median_latency_ms} ms${n === "lesstokenify" && h.index_build_ms ? ` (+${h.index_build_ms} ms build)` : ""}`;
-          md += `| ${label(n)} | ${p(h.mean_recall_pct)} | ${p(h.mean_precision_pct)} | ${spd} | ${h.mean_context_tokens} | ${n === rep.baselineRetriever ? "—" : p(h.token_reduction_pct) + " fewer"} | ${p(h.mean_score_pct)} |\n`;
+          md += `| ${label(n)} | ${p(h.mean_recall_pct)} | ${p(h.mean_precision_pct)} | ${spd} | ${h.mean_context_tokens} | ${n === rep.baselineRetriever ? "baseline" : p(h.token_reduction_pct) + " fewer"} | ${p(h.mean_score_pct)} |\n`;
         }
-        md += `\n## Paraphrase robustness — recall by lexical overlap\n\n`;
+        md += `\n## Paraphrase robustness, recall by lexical overlap\n\n`;
         md += `| Retriever | exact | partial | none |\n|---|---|---|---|\n`;
         for (const n of rep.retrievers) {
           const bo = S[n].by_overlap || {};
@@ -827,9 +827,9 @@
           .sort((a, b) => a.by[primary].score_detail.score - b.by[primary].score_detail.score)
           .slice(0, 15);
         if (misses.length) {
-          md += `\n## ${label(primary)} — sample misses\n\n`;
+          md += `\n## ${label(primary)}, sample misses\n\n`;
           for (const r of misses)
-            md += `- **${r.query}** _(${r.category}${r.overlap ? ", " + r.overlap + "-overlap" : ""})_\n  - returned: ${r.by[primary].returned.map((x) => x.file.split("/").pop()).join(", ") || "—"}\n  - correct: ${(r.ground_truth.answer_text || "").slice(0, 160)}\n`;
+            md += `- **${r.query}** _(${r.category}${r.overlap ? ", " + r.overlap + "-overlap" : ""})_\n  - returned: ${r.by[primary].returned.map((x) => x.file.split("/").pop()).join(", ") || "none"}\n  - correct: ${(r.ground_truth.answer_text || "").slice(0, 160)}\n`;
         }
         md += `\n_Generated by RetriEval._\n`;
         return md;
@@ -863,7 +863,7 @@
           done: ["Done", "Evaluation complete"],
         };
         const [step, label] = PHASES[p.phase] || ["", p.phase];
-        $("prPhase").textContent = step ? `${step} — ${label}` : label;
+        $("prPhase").textContent = step ? `${step}, ${label}` : label;
         $("prMsg").textContent = p.msg || "";
         const bar = document.querySelector("#progress .bar");
         if (p.total) {
@@ -873,7 +873,7 @@
           bar.classList.remove("indet");
           $("prBar").style.width = "100%";
         } else {
-          bar.classList.add("indet"); // busy but not countable — never look frozen
+          bar.classList.add("indet"); // busy but not countable, never look frozen
         }
       }
 
@@ -885,7 +885,7 @@
         $("standaloneNote").classList.remove("hidden");
         $("pick").disabled = true;
         $("heroPick").classList.add("hidden");
-        $("heroSub").textContent = "Viewer mode — load a saved results file above.";
+        $("heroSub").textContent = "Viewer mode, load a saved results file above.";
         $("loadFile").addEventListener("change", (e) => {
           const f = e.target.files[0]; if (!f) return;
           const rd = new FileReader();

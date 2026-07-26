@@ -1,20 +1,20 @@
 /**
- * Baseline retrievers — what an agent does WITHOUT LessTokenify.
+ * Baseline retrievers, what an agent does WITHOUT LessTokenify.
  *
  *  - grep (lexical) : naive lexical file search (files containing the query
  *              terms, ranked by match count), returning matching lines +
  *              context. This is "the agent greps the repo".
- *              NOTE: this is a pure-JS grep, NOT the real `rg`/`grep` binary —
+ *              NOTE: this is a pure-JS grep, NOT the real `rg`/`grep` binary, 
  *              done so it runs inside the packaged .exe with no external
  *              dependency. grep, ripgrep, and this JS version all find the SAME
  *              files (all lexical); they differ only in speed, not results. The
  *              internal id stays "ripgrep" for back-compat; the display label is
  *              the honest "grep (lexical)".
- *  - wholefile: same lexical file-finding, but returns the ENTIRE file(s) — the
+ *  - wholefile: same lexical file-finding, but returns the ENTIRE file(s), the
  *              token-expensive baseline ("the agent reads the whole file").
  *
  * Both use the SAME candidate ranking, so their RECALL is identical and only
- * their TOKEN cost differs — which is exactly the point of the comparison.
+ * their TOKEN cost differs, which is exactly the point of the comparison.
  * Uniform retriever interface: (repoRoot, query, ctx) -> { files, contextTokens, wholeFileTokens }.
  */
 import { readFileSync } from "node:fs";
@@ -74,7 +74,7 @@ function rank(repoRoot, files, query) {
   return scored.slice(0, TOP_K);
 }
 
-// matching lines + a little context, capped — what a grep user actually reads
+// matching lines + a little context, capped, what a grep user actually reads
 function grepSnippet(repoRoot, file, query) {
   const ts = terms(query).map((t) => t.toLowerCase());
   const lines = contentOf(repoRoot, file).split(/\r?\n/);

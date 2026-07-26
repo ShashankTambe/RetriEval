@@ -2,9 +2,9 @@
  * Electron main process for the RetriEval evaluator.
  *
  * The heavy evaluation runs in a utilityProcess worker (gui/evalWorker.cjs) so
- * the main thread stays responsive — no "Not Responding" window on Windows.
+ * the main thread stays responsive, no "Not Responding" window on Windows.
  * Main handles: folder dialog, save dialog, agent detection, deep mode (spawns
- * the user's claude/codex CLI — IO-bound, doesn't block), and relaying progress.
+ * the user's claude/codex CLI, IO-bound, doesn't block), and relaying progress.
  */
 import { app, BrowserWindow, ipcMain, dialog, utilityProcess } from "electron";
 import { fileURLToPath } from "node:url";
@@ -49,7 +49,7 @@ function runViaWorker(repoPath, opts, onProgress) {
 }
 
 /**
- * Env-gated headless self-test — proves the PACKAGED binary runs a full
+ * Env-gated headless self-test, proves the PACKAGED binary runs a full
  * evaluation THROUGH THE WORKER (exercises the utilityProcess path too).
  */
 async function maybeSelfTest() {
@@ -76,7 +76,7 @@ function createWindow() {
     minHeight: 600,
     show: false, // avoid a blank window flashing while HDD reads the page
     backgroundColor: "#23211D",
-    title: "RetriEval — LessTokenify Evaluator",
+    title: "RetriEval, LessTokenify Evaluator",
     webPreferences: {
       preload: join(__dirname, "preload.cjs"),
       contextIsolation: true,
@@ -123,19 +123,19 @@ ipcMain.handle("agent-auth-status", async (_evt, provider) => {
 });
 
 // Opens a terminal running the provider's sign-in; the CLI opens the browser.
-// We never see credentials — the OAuth flow happens entirely in the user's browser.
+// We never see credentials, the OAuth flow happens entirely in the user's browser.
 ipcMain.handle("agent-login", async (_evt, provider) => {
   const { openLogin } = await import("../src/eval/semantic.mjs");
   return openLogin(provider);
 });
 
-// Bring-your-own agent retriever — a sampled, non-deterministic contestant that
+// Bring-your-own agent retriever, a sampled, non-deterministic contestant that
 // spends the user's own tokens. Spawns their CLI (IO-bound, doesn't block the UI
 // thread the way the ts-morph core would). Auth failure rejects with a clear
 // message the renderer surfaces as "connect your claude/codex".
 ipcMain.handle("run-agent-retriever", async (_evt, payload = {}) => {
   const { sandbox, questions, provider, model, effort } = payload;
-  if (!sandbox || !existsSync(sandbox)) throw new Error("The evaluated sandbox is no longer on disk — re-run the benchmark first.");
+  if (!sandbox || !existsSync(sandbox)) throw new Error("The evaluated sandbox is no longer on disk, re-run the benchmark first.");
   const { runAgentRetriever } = await import("../src/eval/agentRun.mjs");
   return runAgentRetriever(sandbox, questions, {
     provider, model, effort,
@@ -158,7 +158,7 @@ ipcMain.handle("run-eval", async (_evt, repoPath, opts = {}) => {
   const report = await runViaWorker(repoPath, opts, (p) => win?.webContents.send("progress", p));
 
   if (opts.deep) {
-    win?.webContents.send("progress", { phase: "semantic", msg: "Deep mode — running your agent CLI for the semantic answer key…" });
+    win?.webContents.send("progress", { phase: "semantic", msg: "Deep mode, running your agent CLI for the semantic answer key…" });
     try {
       const { runSemantic } = await import("../src/eval/semantic.mjs");
       const semantic = await runSemantic(report.repo.sandbox);

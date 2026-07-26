@@ -6,15 +6,15 @@ dist/
 dist-pack/
 build-staging/
 
-# eval run artifacts — reports can describe private repos, never commit them
+# eval run artifacts, reports can describe private repos, never commit them
 eval-results/
 
-# PRIVATE answer keys — derived from closed-source apps, must NOT be published.
+# PRIVATE answer keys, derived from closed-source apps, must NOT be published.
 # Public answer keys, if any, should be added back explicitly with a negation
 # rule below (e.g. `!answer-key/sample-app/`).
 answer-key/*/
 
-# Private working docs — contain numbers/names derived from a closed-source app.
+# Private working docs, contain numbers/names derived from a closed-source app.
 # The public design write-up is DESIGN.md; scrub + un-ignore these if you want
 # any of them published.
 VISION.md
@@ -37,3 +37,5 @@ Thumbs.db
 *.tmp
 retrieval-selftest.json
 retrieval-boottest.txt
+tools/pack.mjs
+build/

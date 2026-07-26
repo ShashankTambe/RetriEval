@@ -1,7 +1,7 @@
 # The README screenshot
 
 `README.md` references `docs/screenshot.png`. Drop a real one in here before you
-push — a shot of *your* run is a better asset than any mockup.
+push, a shot of *your* run is a better asset than any mockup.
 
 ## Capture it (≈30 seconds)
 
@@ -12,7 +12,7 @@ push — a shot of *your* run is a better asset than any mockup.
    - **macOS:** `Cmd` + `Shift` + `4`, then drag.
 4. Save it as `docs/screenshot.png`.
 
-Grab the top of the report — the comparison table + verdict — so the first thing
+Grab the top of the report, the comparison table + verdict, so the first thing
 a visitor sees is the numbers. The paraphrase-robustness and fairness panels make
 good secondary shots if you want a small gallery later.
 

@@ -1,5 +1,5 @@
 // Bridges the sandboxed renderer to the main process. CommonJS (required for
-// contextIsolation preloads). Exposes a minimal, explicit API — no Node access
+// contextIsolation preloads). Exposes a minimal, explicit API, no Node access
 // leaks into the page.
 const { contextBridge, ipcRenderer } = require("electron");
 

@@ -1,5 +1,5 @@
 /**
- * Sandbox — copy the target repo's SOURCE into a temp workspace so the
+ * Sandbox, copy the target repo's SOURCE into a temp workspace so the
  * evaluator never mutates the user's real repo (LT writes .lesstokenify there,
  * ts-morph reads it). Excludes heavy/irrelevant dirs. Source-only is enough:
  * both ts-morph and LT operate on the .ts/.tsx/.js/.jsx tree + configs.

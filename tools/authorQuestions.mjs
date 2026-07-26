@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Offline styleguided question authoring (DECISIONS.md §D) — the build-time step
+ * Offline styleguided question authoring (DECISIONS.md §D), the build-time step
  * that FREEZES an LLM-authored question stratum to disk. Kept out of the live
  * eval so runs stay deterministic; you author once, review, and commit.
  *
@@ -33,7 +33,7 @@ if (!repo) {
 const RETRIEVAL_ROOT = fileURLToPath(new URL("../", import.meta.url));
 
 const sandbox = makeSandbox(repo);
-if (!hasSource(sandbox)) { console.error("No src/ found — is this a TS/JS project?"); process.exit(1); }
+if (!hasSource(sandbox)) { console.error("No src/ found, is this a TS/JS project?"); process.exit(1); }
 const dump = analyze(sandbox, "authoring");
 console.log(`Answer key: ${dump.stats.symbols} symbols, ${dump.stats.callEdges} call edges.`);
 
@@ -59,7 +59,7 @@ if (!questions.length) {
 mkdirSync(keyDir, { recursive: true });
 const outPath = join(keyDir, "authored.questions.json");
 const doc = {
-  _status: "CANDIDATE — LLM-authored, answers anchored to ts-morph. Review before trusting as a frozen stratum.",
+  _status: "CANDIDATE, LLM-authored, answers anchored to ts-morph. Review before trusting as a frozen stratum.",
   repo: dump.repo.name,
   author: questions[0].author,
   generatedAt: new Date().toISOString(),

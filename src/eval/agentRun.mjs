@@ -8,7 +8,7 @@
  * quality + cost-of-searching metrics.
  *
  * The caller passes already-sampled question stubs (id, query, negative,
- * ground_truth) — sampling happens renderer-side so the payload stays small and
+ * ground_truth), sampling happens renderer-side so the payload stays small and
  * the user sees exactly how many queries will be run (and billed).
  */
 import { agentRetrieve } from "./retrievers/agent.mjs";
@@ -48,7 +48,7 @@ export async function runAgentRetriever(sandbox, questions, opts = {}) {
         answer_text: (q.ground_truth && q.ground_truth.answer_text) || "",
       });
     } catch (e) {
-      // First-query failure is almost always auth/CLI (not logged in) — abort with
+      // First-query failure is almost always auth/CLI (not logged in), abort with
       // the clear message rather than silently scoring an empty run.
       if (i === 0) throw e;
       rows.push(null); // a mid-run timeout drops one question, run continues
@@ -83,7 +83,7 @@ export async function runAgentRetriever(sandbox, questions, opts = {}) {
   };
 }
 
-/** Mean recall/precision (as %) grouped by a key — mirrors the deterministic breakdowns. */
+/** Mean recall/precision (as %) grouped by a key, mirrors the deterministic breakdowns. */
 function groupStat(rows, keyFn) {
   const g = {};
   for (const r of rows) {

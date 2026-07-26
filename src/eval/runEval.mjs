@@ -61,7 +61,7 @@ if (report.questionCounts) {
 }
 
 if (report.fairness) {
-  console.log("\nRecall by question-author STRATUM (reported separately — control is the human ruler):");
+  console.log("\nRecall by question-author STRATUM (reported separately, control is the human ruler):");
   const strata = ["control", "generated", "llm"];
   const present = strata.filter((s) => report.fairness.by_stratum[s]);
   console.log(`${"".padEnd(16)} ${present.map((s) => s.padStart(12)).join("")}`);

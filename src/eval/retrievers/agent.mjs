@@ -1,5 +1,5 @@
 /**
- * Agent retriever — the first "bring your own retriever" (DECISIONS.md §E).
+ * Agent retriever, the first "bring your own retriever" (DECISIONS.md §E).
  *
  * An LLM-in-a-loop contestant: instead of a mechanical index, we hand the user's
  * own `claude`/`codex` CLI the query and let it grep/read/follow inside a
@@ -8,13 +8,13 @@
  *
  * For claude we use `--output-format stream-json` so we can surface what the
  * agent is doing live (its grep/read/glob tool calls) instead of a multi-minute
- * wall of silence — each tool call is reported through ctx.onStep. Codex falls
+ * wall of silence, each tool call is reported through ctx.onStep. Codex falls
  * back to a buffered run.
  *
  * Two cost axes are captured, not just quality: the agent spends TOKENS and
  * SECONDS to search (cost-of-searching), where LT is free/instant.
  *
- * Non-deterministic and login-gated by nature — kept out of the deterministic
+ * Non-deterministic and login-gated by nature, kept out of the deterministic
  * core. Any auth failure surfaces a clear message and never corrupts a run.
  */
 import { spawn } from "node:child_process";
@@ -56,7 +56,7 @@ function describeTool(name, input = {}) {
   }
 }
 
-/** Streaming claude run — reports each tool call via ctx.onStep as it happens. */
+/** Streaming claude run, reports each tool call via ctx.onStep as it happens. */
 function claudeStreamRetrieve(repoRoot, query, ctx) {
   const args = ["-p", "--output-format", "stream-json", "--verbose"];
   if (ctx.model) args.push("--model", ctx.model);

@@ -3,15 +3,15 @@
  *
  * Two jobs:
  *  1. Report raw recall/precision per STRATUM × retriever, never averaged across
- *     strata — the human control set is the neutral ruler and must stay visible.
- *  2. Home-field delta — when a question author is the same family as a
+ *     strata, the human control set is the neutral ruler and must stay visible.
+ *  2. Home-field delta, when a question author is the same family as a
  *     contestant (only possible once an agent retriever is added, build #2), does
  *     that contestant over-perform on its OWN authored questions vs the human
  *     control? A positive delta is home-field advantage. With no same-family
  *     contestant (this version's lexical retrievers), it's honestly N/A.
  *
  * Also surfaces "authored easiness": how much easier the auto strata are than the
- * human control — a high gap means the generated/llm questions aren't testing the
+ * human control, a high gap means the generated/llm questions aren't testing the
  * hard, human-type retrieval the control set does.
  */
 const mean = (a) => (a.length ? a.reduce((s, x) => s + x, 0) / a.length : null);
@@ -80,6 +80,6 @@ export function computeFairness(results, retrievers) {
     easiness,
     note: home_field.length
       ? undefined
-      : "No same-family contestant present — the author-vs-own-questions home-field delta is N/A this run. Strata are still reported separately; the human control set is the neutral ruler.",
+      : "No same-family contestant present, the author-vs-own-questions home-field delta is N/A this run. Strata are still reported separately; the human control set is the neutral ruler.",
   };
 }

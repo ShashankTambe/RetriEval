@@ -1,7 +1,7 @@
 /**
  * LessTokenify retriever adapter.
  *
- * Drives LT's exported runGraphify(repo, query) — pure retrieval, NO LLM, NO
+ * Drives LT's exported runGraphify(repo, query), pure retrieval, NO LLM, NO
  * interactive prompts, and NO agent-file injection (that only happens in the
  * CLI `init` path). LT auto-builds .lesstokenify/graph.json on first call and
  * reuses it after. runGraphify does not call applyFeedback, so retrieval is
@@ -17,7 +17,7 @@ import { estimateTokens } from "./tokens.mjs";
 
 /**
  * Locate LessTokenify's retrieval entry, or return null if it isn't installed.
- * LT is an OPTIONAL, swappable retriever — the harness runs on grep + whole-file
+ * LT is an OPTIONAL, swappable retriever, the harness runs on grep + whole-file
  * with zero sibling dependencies. Point at LT with RETRIEVAL_LT_RUNNER, or drop
  * it next to this repo in dev.
  */

@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "license": "PolyForm-Noncommercial-1.0.0",
-  "description": "RetriEval — a neutral evaluation harness for code-retrieval systems: measures how well a retriever finds the right code, and at what token cost.",
+  "description": "RetriEval, a neutral evaluation harness for code-retrieval systems: measures how well a retriever finds the right code, and at what token cost.",
   "type": "module",
   "main": "gui/main.mjs",
   "scripts": {

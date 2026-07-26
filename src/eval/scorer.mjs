@@ -1,5 +1,5 @@
 /**
- * Scoring — the match function + per-category formulas from the benchmark
+ * Scoring, the match function + per-category formulas from the benchmark
  * design (../LessTokenify/HANDOFF.md §"Per-category scoring"). Grades a
  * retriever's returned files (rank order) against a question's ground truth.
  *
@@ -29,7 +29,7 @@ export function relevantFiles(q) {
 }
 
 /**
- * Raw file-level Precision/Recall per VISION.md — of everything retrieved, how
+ * Raw file-level Precision/Recall per VISION.md, of everything retrieved, how
  * much was relevant; of everything relevant, how much was retrieved. No
  * weighting, no snippet-level credit. Null for negatives / empty ground truth.
  */

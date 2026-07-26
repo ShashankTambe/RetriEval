@@ -1,7 +1,7 @@
 /**
  * Evaluation pipeline. For a target repo:
  *   1. sandbox-copy source (never touch the real repo)
- *   2. Phase 0 — independent static analysis (ts-morph) -> mechanical answer key
+ *   2. Phase 0, independent static analysis (ts-morph) -> mechanical answer key
  *   3. build the question set: generated (grounded in the key) + curated
  *      paraphrase set when one exists for this repo (brings the
  *      zero-lexical-overlap "none" bucket that machines can't derive)
@@ -11,7 +11,7 @@
  *      the weighted composite (secondary) + real token counts + latency
  *   6. aggregate per retriever, per category, per lexical-overlap bucket
  *
- * Phase 0 runs EVERY time and derives ground truth independently — the tool
+ * Phase 0 runs EVERY time and derives ground truth independently, the tool
  * never trusts that the author knows their own repo.
  */
 import { makeSandbox, hasSource } from "./sandbox.mjs";
@@ -38,9 +38,9 @@ export async function runEvaluation(repoRoot, opts = {}) {
 
   onProgress({ phase: "sandbox", msg: "Copying repo source to sandbox (your repo is untouched)…" });
   const sandbox = makeSandbox(repoRoot);
-  if (!hasSource(sandbox)) throw new Error("No src/, App.tsx or index.ts found — is this a TS/JS project?");
+  if (!hasSource(sandbox)) throw new Error("No src/, App.tsx or index.ts found, is this a TS/JS project?");
 
-  onProgress({ phase: "analyze", msg: "Phase 0 — independent static analysis (ts-morph)…" });
+  onProgress({ phase: "analyze", msg: "Phase 0, independent static analysis (ts-morph)…" });
   const dump = analyze(sandbox, "gui-run");
   onProgress({ phase: "analyze", msg: `Answer key: ${dump.stats.symbols} symbols, ${dump.stats.callEdges} call edges, ${dump.stats.importEdges} import edges.` });
 
@@ -78,7 +78,7 @@ export async function runEvaluation(repoRoot, opts = {}) {
     ltIndexBuildMs = +(performance.now() - tIndex).toFixed(0);
     onProgress({ phase: "retrieve", msg: `Index built in ${ltIndexBuildMs} ms. Running ${RETRIEVERS.length} retrievers…` });
   } else {
-    onProgress({ phase: "retrieve", msg: `LessTokenify not configured — running ${RETRIEVERS.length} baseline retrievers (grep, whole-file).` });
+    onProgress({ phase: "retrieve", msg: `LessTokenify not configured, running ${RETRIEVERS.length} baseline retrievers (grep, whole-file).` });
   }
 
   const results = [];

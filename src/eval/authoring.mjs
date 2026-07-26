@@ -1,8 +1,8 @@
 /**
- * Styleguided LLM question authoring — the "question setter" from DECISIONS.md §D.
+ * Styleguided LLM question authoring, the "question setter" from DECISIONS.md §D.
  *
  * The integrity rule (DECISIONS.md §C): the LLM may write the *question*, it must
- * NEVER own the *answer*. So we do NOT ask the model "what's the answer" — we hand
+ * NEVER own the *answer*. So we do NOT ask the model "what's the answer", we hand
  * it a MECHANICAL FACT already extracted by ts-morph (symbol + file + neighbours),
  * and ask only for natural-language phrasings a human would actually type. The
  * ground truth is attached by US from that fact, so every authored question is
@@ -10,7 +10,7 @@
  *
  * We inject a dialect prompt + real examples from the human control set so the
  * authored questions read like the gold seed (reduces, not erases, home-field
- * bias — the residual is then measured in fairness.mjs).
+ * bias, the residual is then measured in fairness.mjs).
  *
  * Lights up only when `claude`/`codex` is logged in; otherwise returns [] and the
  * run proceeds on the deterministic control + generated strata alone.
@@ -94,7 +94,7 @@ function sampleFacts(dump, maxFacts) {
   return out;
 }
 
-/** ground truth built from the fact — never from the model. */
+/** ground truth built from the fact, never from the model. */
 function groundTruthFor(f) {
   if (f.kind === "location")
     return {
@@ -125,11 +125,11 @@ function groundTruthFor(f) {
 function factLine(f) {
   if (f.kind === "location") {
     const calls = f.calls.length ? ` It calls: ${f.calls.join(", ")}.` : "";
-    return `[${f.fid}] LOCATION — the ${f.symKind} "${f.symbol}" in ${base(f.file)} is the place that does this job.${calls}`;
+    return `[${f.fid}] LOCATION, the ${f.symKind} "${f.symbol}" in ${base(f.file)} is the place that does this job.${calls}`;
   }
   if (f.kind === "relationship")
-    return `[${f.fid}] RELATIONSHIP — "${f.symbol}" (in ${base(f.file)}) is used by ${f.dependents.length} other files.`;
-  return `[${f.fid}] FLOW — "${f.caller}" (in ${base(f.callerFile)}) drives a chain calling: ${f.path.slice(1).map((p) => p.symbol).join(" → ")}.`;
+    return `[${f.fid}] RELATIONSHIP, "${f.symbol}" (in ${base(f.file)}) is used by ${f.dependents.length} other files.`;
+  return `[${f.fid}] FLOW, "${f.caller}" (in ${base(f.callerFile)}) drives a chain calling: ${f.path.slice(1).map((p) => p.symbol).join(" → ")}.`;
 }
 
 /** dialect examples: pull a few "none"-overlap phrasings from the human control set. */
@@ -146,9 +146,9 @@ function dialectExamples(exemplars, n = 5) {
 function buildPrompt(facts, exemplars) {
   const examples = dialectExamples(exemplars);
   const exBlock = examples.length
-    ? `\nWrite in this DIALECT — the way a busy developer actually phrases things, plain and outcome-focused, NOT using the code identifier. Examples of the target style:\n${examples.map((e) => `  - "${e}"`).join("\n")}\n`
+    ? `\nWrite in this DIALECT, the way a busy developer actually phrases things, plain and outcome-focused, NOT using the code identifier. Examples of the target style:\n${examples.map((e) => `  - "${e}"`).join("\n")}\n`
     : "";
-  return `You are helping build a code-retrieval benchmark. For each FACT below, write natural-language questions a developer would ask whose answer is exactly that fact. You are ONLY writing the questions — do not state the answer, do not add facts.
+  return `You are helping build a code-retrieval benchmark. For each FACT below, write natural-language questions a developer would ask whose answer is exactly that fact. You are ONLY writing the questions, do not state the answer, do not add facts.
 ${exBlock}
 For each fact produce:
   - "canonical": one clear question (may name the concept).
@@ -163,7 +163,7 @@ Output ONLY a single JSON object, no prose:
 
 /**
  * Author questions for a repo. `opts`: { agent?, maxFacts=15, exemplars, onProgress }.
- * Returns [] on any failure (not logged in, no CLI, unparseable) — never throws.
+ * Returns [] on any failure (not logged in, no CLI, unparseable), never throws.
  */
 export async function authorQuestions(dump, sandbox, opts = {}) {
   const { agent, maxFacts = 15, exemplars = [], onProgress = () => {} } = opts;

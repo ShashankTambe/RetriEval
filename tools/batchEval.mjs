@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Batch runner (DECISIONS.md build queue #3) — run the deterministic evaluation
+ * Batch runner (DECISIONS.md build queue #3), run the deterministic evaluation
  * across many repos and aggregate cross-repo, so a headline number isn't n=1.
  *
  *   node tools/batchEval.mjs <dir-of-repos> [limit]
@@ -8,7 +8,7 @@
  * <dir-of-repos> is a folder whose immediate subdirectories are each a TS/JS
  * repo. Each is evaluated independently; per-repo reports are written and a
  * cross-repo mean is printed + saved. Agent retrievers are NOT run here (they're
- * interactive, sampled, and spend tokens) — this is the reproducible core.
+ * interactive, sampled, and spend tokens), this is the reproducible core.
  */
 import { runEvaluation } from "../src/eval/pipeline.mjs";
 import { readdirSync, statSync, writeFileSync, mkdirSync } from "node:fs";

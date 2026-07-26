@@ -2,14 +2,14 @@
  * Independent static-analysis tool for the RetriEval benchmark.
  *
  * Purpose: build the MECHANICAL half of the answer key (symbols, import edges,
- * call edges, usedBy) for a fixture repo, using ts-morph — a DIFFERENT
+ * call edges, usedBy) for a fixture repo, using ts-morph, a DIFFERENT
  * implementation from LessTokenify's own AST graph builder.
  *
  * Anti-overfit guarantee: this file must never import or reuse LessTokenify.
  * It derives every fact from the source directly so that, later, LT can be
  * graded against a key it had no hand in producing. When LT disagrees with
  * this dump, the disagreement points to an LT gap (or a bug here that human
- * spot-check catches) — never the reverse.
+ * spot-check catches), never the reverse.
  *
  * Scope of truth produced here: Relationship + Flow (mechanical, no judgment).
  * Location + Architecture (semantic) are produced separately by whole-file
@@ -49,7 +49,7 @@ const rel = (absPath: string): string =>
   relative(repoRoot, resolve(absPath)).split(sep).join("/");
 
 // ---------------------------------------------------------------------------
-// Project — only add repo source; let ts-morph resolve imports on demand.
+// Project, only add repo source; let ts-morph resolve imports on demand.
 // ---------------------------------------------------------------------------
 const tsConfigFilePath = existsSync(join(repoRoot, "tsconfig.json"))
   ? join(repoRoot, "tsconfig.json")
@@ -164,7 +164,7 @@ for (const sf of sourceFiles) {
       },
       cls.getNameNode(),
     );
-    // methods (captured as ClassName.method) — useful for call-edge callers
+    // methods (captured as ClassName.method), useful for call-edge callers
     for (const m of cls.getMethods()) {
       const mn = m.getName();
       if (!mn) continue;
@@ -262,7 +262,7 @@ for (const sf of sourceFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// Call edges — resolve each call site's callee to its declaration.
+// Call edges, resolve each call site's callee to its declaration.
 // ---------------------------------------------------------------------------
 let callsSeen = 0;
 let callsResolvedInRepo = 0;
@@ -283,7 +283,7 @@ const enclosingSymbolName = (node: Node): string => {
     } else if (Node.isArrowFunction(cur) || Node.isFunctionExpression(cur)) {
       const parent = cur.getParent();
       if (parent && Node.isVariableDeclaration(parent)) return parent.getName();
-      // anonymous callback — keep walking to find a named owner
+      // anonymous callback, keep walking to find a named owner
     }
     cur = cur.getParent();
   }
@@ -353,7 +353,7 @@ for (const sf of sourceFiles) {
 // Nested provider/hook methods (depth-1 named functions, e.g. DataProvider.addLead).
 // The top-level pass misses these; Location questions target them heavily, so the
 // answer key needs their exact line ranges. Only capture directly-nested (depth 1)
-// named function-like declarations — deeper callbacks are noise.
+// named function-like declarations, deeper callbacks are noise.
 // ---------------------------------------------------------------------------
 const fnLikeKind = (init: Node | undefined): SymbolKind | null => {
   if (!init) return null;
@@ -423,7 +423,7 @@ for (const sf of sourceFiles) {
 }
 
 // ---------------------------------------------------------------------------
-// usedBy — cross-file references of each exported symbol.
+// usedBy, cross-file references of each exported symbol.
 // ---------------------------------------------------------------------------
 for (const { node, key } of exportedDecls) {
   if (!Node.isReferenceFindable(node)) continue;
@@ -439,7 +439,7 @@ for (const { node, key } of exportedDecls) {
 }
 
 // ---------------------------------------------------------------------------
-// Emit — deterministic ordering so the dump is reproducible.
+// Emit, deterministic ordering so the dump is reproducible.
 // ---------------------------------------------------------------------------
 const byFileThenName = (a: { file: string; name: string }, b: typeof a) =>
   a.file === b.file ? a.name.localeCompare(b.name) : a.file.localeCompare(b.file);

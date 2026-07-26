@@ -1,6 +1,6 @@
 /**
  * Repo-agnostic question generator (library form). Given a mechanical dump
- * (from tools/staticAnalysis.ts — independent of LessTokenify), emit grounded
+ * (from tools/staticAnalysis.ts, independent of LessTokenify), emit grounded
  * questions across Location / Relationship / Flow. Same logic as
  * tools/genQuestions.mjs but as a pure function with no curated overlay, so it
  * works for ANY repo the GUI is pointed at.
@@ -19,7 +19,7 @@ const splitFor = (id) => {
  * camelCase/snake_case → spaced words ("addLead" → "add lead"). Used to derive
  * a PARTIAL-overlap paraphrase mechanically: the query no longer contains the
  * literal symbol, only its word fragments. A NONE-overlap paraphrase cannot be
- * derived mechanically (it requires semantics) — those come from curated sets.
+ * derived mechanically (it requires semantics), those come from curated sets.
  */
 const spaceOut = (name) =>
   name
@@ -33,7 +33,7 @@ export function generate(dump) {
   const q = [];
   let i;
 
-  // GL — Location: every symbol definition site
+  // GL, Location: every symbol definition site
   i = 0;
   for (const s of dump.symbols) {
     const id = pad("GL", ++i);
@@ -62,7 +62,7 @@ export function generate(dump) {
     });
   }
 
-  // RD — Relationship: dependents of each symbol (usedBy)
+  // RD, Relationship: dependents of each symbol (usedBy)
   i = 0;
   for (const key of Object.keys(dump.usedBy || {})) {
     const [file, sym] = key.split("::");
@@ -91,7 +91,7 @@ export function generate(dump) {
     (importsBy.get(e.fromFile) || importsBy.set(e.fromFile, []).get(e.fromFile)).push(e.toFile);
   }
 
-  // RI — Relationship: importers of each file (fan-in)
+  // RI, Relationship: importers of each file (fan-in)
   i = 0;
   for (const [file, imps] of importersOf) {
     const u = uniq(imps);
@@ -111,7 +111,7 @@ export function generate(dump) {
     });
   }
 
-  // RO — Relationship: internal dependencies of each file (fan-out)
+  // RO, Relationship: internal dependencies of each file (fan-out)
   i = 0;
   for (const [file, imps] of importsBy) {
     const u = uniq(imps);
@@ -131,7 +131,7 @@ export function generate(dump) {
     });
   }
 
-  // FC — Flow: callee set of each multi-callee caller
+  // FC, Flow: callee set of each multi-callee caller
   const groups = new Map();
   for (const e of dump.callEdges) {
     const k = `${e.callerFile}::${e.caller}`;

@@ -1,5 +1,5 @@
 /**
- * Deep (semantic) mode — the automatable version of Phase 0 Step 3.
+ * Deep (semantic) mode, the automatable version of Phase 0 Step 3.
  *
  * Instead of baking in an API key, we shell out to the user's OWN installed
  * agent CLI (`claude` or `codex`), which carries its own auth. Only ever called
@@ -8,7 +8,7 @@
  * that the mechanical ts-morph pass cannot produce.
  *
  * Best-effort + defensive: any failure returns an error object and never breaks
- * the mechanical result. Untested against a live CLI in this repo — verify on a
+ * the mechanical result. Untested against a live CLI in this repo, verify on a
  * machine with claude/codex installed.
  */
 import { spawn } from "node:child_process";
@@ -55,7 +55,7 @@ export async function authStatus(provider = "claude") {
 
 /**
  * Open a VISIBLE terminal running the provider's sign-in command; the CLI then
- * opens the browser for the OAuth flow. Fire-and-forget — the renderer polls
+ * opens the browser for the OAuth flow. Fire-and-forget, the renderer polls
  * authStatus to know when sign-in completed. Never handles credentials itself.
  */
 export function openLogin(provider = "claude") {
@@ -73,7 +73,7 @@ export function openLogin(provider = "claude") {
 const PROMPT = `You are producing a SEMANTIC answer key for a code-retrieval benchmark.
 Read the source files in the current directory. Identify the major architectural
 subsystems (e.g. authentication, state management, data/backend, domain logic,
-navigation, monetization, notifications, onboarding, theming, error handling —
+navigation, monetization, notifications, onboarding, theming, error handling, 
 whatever actually applies).
 
 Output ONLY a single JSON object, no prose, in exactly this shape:
@@ -104,7 +104,7 @@ function runCli(cmd, args, { cwd, input, timeoutMs = 240000 }) {
 /**
  * Run an arbitrary prompt through the user's own agent CLI and return raw stdout.
  * Shared by deep-mode (semantic key), the styleguided question author, and the
- * agent retriever — all reuse the same spawn + login handling. Never bakes in an
+ * agent retriever, all reuse the same spawn + login handling. Never bakes in an
  * API key. `model`/`effort` map to the CLIs' real flags; `jsonEnvelope` asks
  * claude for its JSON output (carrying token usage) so callers can report cost.
  */
@@ -122,7 +122,7 @@ export async function runAgent(prompt, { cwd, agent, timeoutMs, model, effort, j
     raw = await runCli("claude", args, { cwd, input: prompt, timeoutMs });
   } else {
     const args = ["exec"];
-    if (model) args.push("--model", model); // codex effort flags vary by version — model only, kept honest
+    if (model) args.push("--model", model); // codex effort flags vary by version, model only, kept honest
     args.push(prompt);
     raw = await runCli("codex", args, { cwd, timeoutMs });
   }

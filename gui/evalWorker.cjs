@@ -1,5 +1,5 @@
 /**
- * Evaluation worker — runs in an Electron utilityProcess (a separate Node
+ * Evaluation worker, runs in an Electron utilityProcess (a separate Node
  * process) so the heavy pipeline (ts-morph analysis, 1000s of retrievals) never
  * blocks the main thread. If it ran on main, Windows would stop pumping the
  * window's message loop and mark the app "Not Responding".
