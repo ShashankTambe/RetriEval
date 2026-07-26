@@ -1,0 +1,53 @@
+{
+  "name": "retrieval",
+  "version": "0.1.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "description": "RetriEval — a neutral evaluation harness for code-retrieval systems: measures how well a retriever finds the right code, and at what token cost.",
+  "type": "module",
+  "main": "gui/main.mjs",
+  "scripts": {
+    "analyze": "tsx tools/staticAnalysis.ts",
+    "eval": "node src/eval/runEval.mjs",
+    "test": "node --test",
+    "gui": "electron gui/main.mjs",
+    "dist": "electron-builder"
+  },
+  "dependencies": {
+    "gpt-tokenizer": "^3.4.0",
+    "ts-morph": "^24.0.0"
+  },
+  "devDependencies": {
+    "electron": "^33.2.1",
+    "electron-builder": "^25.1.8",
+    "electron-packager": "^17.1.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2"
+  },
+  "build": {
+    "appId": "com.retrieval.evaluator",
+    "productName": "RetriEval",
+    "asar": true,
+    "files": [
+      "gui/**/*",
+      "src/**/*",
+      "answer-key/**/*.questions.json",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "portable": {
+      "artifactName": "RetriEval-${version}.exe"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "artifactName": "RetriEval-Setup-${version}.exe",
+      "deleteAppDataOnUninstall": false
+    }
+  }
+}

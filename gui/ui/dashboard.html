@@ -1,0 +1,987 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>RetriEval — LessTokenify Evaluator</title>
+    <style>
+      /* Claude palette — coral accent on warm ivory (light) / warm charcoal (dark) */
+      :root {
+        --bg: #F5F4EE; --panel: #FCFBF7; --ink: #2A2925; --muted: #6E675C;
+        --line: #E6E1D6; --accent: #D97757; --good: #3C8C5F; --warn: #B8860B;
+        --bad: #C0392B; --chip: #ECE7DC;
+        --r-lt: var(--accent); --r-rg: #8A63D2; --r-wf: #A79E90;
+        --shadow: 0 1px 3px rgba(60,50,40,.07), 0 8px 24px rgba(60,50,40,.06);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg:#23211D; --panel:#2C2A25; --ink:#ECE8E0; --muted:#A29A8C;
+          --line:#39352E; --accent:#E0876A; --good:#4FBF8B; --warn:#E6B84A;
+          --bad:#FF7A6B; --chip:#322F29; --r-rg:#B08BFF; --r-wf:#6E685E;
+          --shadow:0 1px 3px rgba(0,0,0,.4);
+        }
+      }
+      :root[data-theme="dark"] { --bg:#23211D; --panel:#2C2A25; --ink:#ECE8E0; --muted:#A29A8C; --line:#39352E; --accent:#E0876A; --good:#4FBF8B; --warn:#E6B84A; --bad:#FF7A6B; --chip:#322F29; --r-rg:#B08BFF; --r-wf:#6E685E; }
+      :root[data-theme="light"] { --bg:#F5F4EE; --panel:#FCFBF7; --ink:#2A2925; --muted:#6E675C; --line:#E6E1D6; --accent:#D97757; --good:#3C8C5F; --warn:#B8860B; --bad:#C0392B; --chip:#ECE7DC; --r-rg:#8A63D2; --r-wf:#A79E90; }
+      * { box-sizing: border-box; }
+      body { margin:0; background:var(--bg); color:var(--ink); font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; transition: background-color .3s ease, color .3s ease; }
+      .panel, button, .repo, .miss, .track, .qbar, table.cmp tbody tr { transition: background-color .3s ease, border-color .3s ease, color .3s ease; }
+      /* theme toggle */
+      .iconbtn { width:38px; height:38px; padding:0; display:inline-flex; align-items:center; justify-content:center; border-radius:99px; border:1px solid var(--line); background:var(--panel); cursor:pointer; }
+      .iconbtn:hover { border-color: var(--accent); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent); }
+      .iconbtn svg { width:18px; height:18px; stroke:var(--ink); fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; transition: transform .4s ease; }
+      .iconbtn:active svg { transform: rotate(40deg) scale(.9); }
+      .wrap { max-width: 1060px; margin: 0 auto; padding: 24px; }
+      header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:20px; }
+      header h1 { font-size:18px; margin:0; font-weight:700; letter-spacing:-.01em; }
+      header .sub { color:var(--muted); font-size:13px; }
+      .spacer { flex:1; }
+      button { font:inherit; font-weight:600; border:1px solid var(--line); background:var(--panel); color:var(--ink); padding:8px 14px; border-radius:9px; cursor:pointer; }
+      button.primary { background:var(--accent); border-color:var(--accent); color:#fff; }
+      button:disabled { opacity:.5; cursor:not-allowed; }
+      .repo { font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:12px; color:var(--muted); background:var(--chip); padding:4px 8px; border-radius:6px; max-width:320px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:20px; margin-bottom:18px; }
+      .hidden { display:none !important; }
+      h2 { font-size:14px; text-transform:uppercase; letter-spacing:.04em; color:var(--muted); margin:0 0 14px; }
+      #progress .bar { height:8px; background:var(--chip); border-radius:99px; overflow:hidden; margin-top:10px; }
+      #progress .bar > i { display:block; height:100%; background:var(--accent); width:0%; transition:width .3s; }
+      #progress .msg { font-size:13px; color:var(--muted); }
+      #progress .phase { font-weight:600; }
+      /* verdict */
+      .verdict { display:flex; align-items:center; gap:14px; margin-bottom:6px; }
+      .badge { padding:6px 14px; border-radius:99px; font-weight:800; font-size:13px; border:2px solid; white-space:nowrap; }
+      .badge.good{color:var(--good);border-color:var(--good)} .badge.warn{color:var(--warn);border-color:var(--warn)} .badge.bad{color:var(--bad);border-color:var(--bad)}
+      .plain { color:var(--ink); font-size:14.5px; }
+      /* comparison table */
+      table.cmp { width:100%; border-collapse:collapse; margin-top:6px; }
+      table.cmp th, table.cmp td { text-align:right; padding:9px 10px; font-variant-numeric:tabular-nums; }
+      table.cmp th:first-child, table.cmp td:first-child { text-align:left; }
+      table.cmp thead th { font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted); border-bottom:1px solid var(--line); }
+      table.cmp tbody tr { border-bottom:1px solid var(--line); }
+      table.cmp tbody tr.lt { background:color-mix(in srgb, var(--accent) 8%, transparent); }
+      .rname { display:flex; align-items:center; gap:8px; font-weight:700; }
+      .dot { width:10px; height:10px; border-radius:99px; flex-shrink:0; }
+      .big { font-weight:800; }
+      .qbar { height:6px; width:70px; background:var(--chip); border-radius:99px; overflow:hidden; display:inline-block; vertical-align:middle; margin-left:8px; }
+      .qbar > i { display:block; height:100%; }
+      /* category grouped bars */
+      .catrow { margin-bottom:16px; }
+      .catrow .name { font-weight:700; margin-bottom:8px; }
+      .gbar { display:flex; align-items:center; gap:10px; margin:4px 0; font-size:13px; }
+      .gbar .lbl { width:96px; color:var(--muted); flex-shrink:0; }
+      .gbar .track { flex:1; height:14px; background:var(--chip); border-radius:99px; overflow:hidden; }
+      .gbar .track > i { display:block; height:100%; border-radius:99px; }
+      .gbar .val { width:40px; text-align:right; font-weight:700; font-variant-numeric:tabular-nums; }
+      .legend { display:flex; gap:16px; font-size:12px; color:var(--muted); margin-bottom:10px; flex-wrap:wrap; }
+      .legend span { display:flex; align-items:center; gap:6px; }
+      /* misses */
+      .filters { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:6px; align-items:center; }
+      .filters .grp { display:flex; gap:6px; }
+      .filters button { padding:5px 11px; font-size:12.5px; border-radius:99px; }
+      .filters button.on { background:var(--accent); border-color:var(--accent); color:#fff; }
+      .filters .sep { width:1px; align-self:stretch; background:var(--line); margin:2px 4px; }
+      .miss { border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; }
+      .miss .q { font-weight:600; }
+      .miss .row { font-size:13px; margin-top:6px; display:flex; gap:8px; }
+      .miss .k { color:var(--muted); min-width:82px; flex-shrink:0; }
+      .miss .v { font-family:ui-monospace,Menlo,monospace; font-size:12px; }
+      .tag { display:inline-block; font-size:11px; padding:1px 7px; border-radius:99px; background:var(--chip); color:var(--muted); margin-left:8px; }
+      .empty { color:var(--muted); text-align:center; padding:40px; }
+      /* hero / first-run */
+      .herobox { text-align:center; padding:44px 32px; }
+      .hero-title { font-size:20px; font-weight:800; letter-spacing:-.01em; margin-bottom:18px; }
+      .hero-steps { max-width:560px; margin:0 auto 24px; text-align:left; display:flex; flex-direction:column; gap:10px; color:var(--muted); font-size:13.5px; }
+      .step { display:flex; gap:10px; align-items:baseline; }
+      .stepnum { flex-shrink:0; width:20px; height:20px; border-radius:99px; background:var(--chip); color:var(--ink); font-size:11px; font-weight:800; display:inline-flex; align-items:center; justify-content:center; }
+      .heroCta { font-size:15px; padding:12px 22px; border-radius:11px; }
+      .hero-sub { color:var(--muted); font-size:12px; margin-top:12px; }
+      /* selected-repo path, shown centered under the Run button */
+      .hero-repo { margin-top:16px; }
+      .hero-repo .flabel-c { font-size:11px; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:6px; }
+      .hero-repopath { display:inline-block; max-width:100%; font-family:ui-monospace,"SF Mono",Menlo,monospace; font-size:14px; color:var(--ink); background:var(--chip); border:1px solid var(--line); padding:9px 16px; border-radius:9px; overflow-wrap:anywhere; cursor:pointer; }
+      .hero-repopath:hover { border-color:var(--accent); }
+      /* "now press run" cue */
+      @keyframes pulse { 0%{box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 45%, transparent)} 70%{box-shadow:0 0 0 10px transparent} 100%{box-shadow:0 0 0 0 transparent} }
+      button.pulse { animation: pulse 1.4s ease-out 3; }
+      /* indeterminate progress (phases without a countable total) */
+      @keyframes slide { 0%{margin-left:-30%} 100%{margin-left:100%} }
+      #progress .bar.indet > i { width:30% !important; animation: slide 1.1s linear infinite; }
+      #repoPath { cursor:pointer; }
+      #repoPath:hover { border:1px solid var(--accent); }
+      .flabel { font-size:11px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); align-self:center; margin-right:2px; }
+      .pop-title { font-weight:800; margin-bottom:8px; font-size:15px; }
+      /* report action bar + save button */
+      .reportbar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+      #saveMd { font-size:13px; }
+      #saveMd:hover { border-color:var(--accent); color:var(--accent); }
+      .foot { color:var(--muted); font-size:12px; text-align:center; margin-top:8px; }
+      .warnbox { background:color-mix(in srgb, var(--warn) 12%, var(--panel)); border:1px solid var(--warn); border-radius:10px; padding:10px 14px; font-size:13px; margin-bottom:14px; }
+      .note { font-size:12.5px; color:var(--muted); margin-top:10px; }
+      /* agent-retriever cards */
+      .acard { border:1px solid var(--line); border-radius:11px; padding:14px 16px; margin-bottom:12px; }
+      .acard .ahead { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+      .acard .aname { font-weight:700; }
+      .acard .aspec { color:var(--muted); font-size:12.5px; }
+      .acard .spacer { flex:1; }
+      .acard .ametrics { display:flex; gap:22px; flex-wrap:wrap; margin-top:12px; }
+      .acard .m .mv { font-weight:800; font-size:18px; font-variant-numeric:tabular-nums; }
+      .acard .m .mk { color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.03em; }
+      .acard .astatus { font-size:12.5px; color:var(--muted); margin-top:8px; }
+      /* live agent activity */
+      .acard .alive { margin-top:10px; border:1px solid var(--line); border-radius:10px; padding:12px 14px; background:color-mix(in srgb, var(--accent) 5%, transparent); }
+      .acard .alive-top { display:flex; justify-content:space-between; font-size:12px; font-weight:700; margin-bottom:6px; }
+      .acard .alive-pct { color:var(--muted); }
+      .acard .alive .track { height:8px; background:var(--chip); border-radius:99px; overflow:hidden; }
+      .acard .alive .track > i { display:block; height:100%; border-radius:99px; transition:width .3s ease; }
+      .acard .alive-q { font-size:12.5px; color:var(--muted); margin-top:8px; font-style:italic; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .acard .alive-step { display:flex; align-items:center; gap:8px; font-size:13px; font-weight:600; margin-top:8px; }
+      .acard .alive-dot { width:8px; height:8px; border-radius:99px; background:var(--accent); flex-shrink:0; animation:pulseDot 1s ease-in-out infinite; }
+      @keyframes pulseDot { 0%,100%{opacity:1} 50%{opacity:.3} }
+      .acard .alog { margin-top:8px; border-top:1px dashed var(--line); padding-top:8px; }
+      .acard .alog-line { font-family:ui-monospace,Menlo,monospace; font-size:11.5px; color:var(--muted); line-height:1.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+      .acard .adetail { margin-top:14px; padding-top:14px; border-top:1px solid var(--line); }
+      .acard .adetail-h { font-size:12px; font-weight:700; color:var(--ink); margin:10px 0 8px; }
+      .acard .adetail-h:first-child { margin-top:0; }
+      .acard .amiss { margin-top:12px; }
+      .acard .amiss > summary { cursor:pointer; font-size:12.5px; font-weight:600; color:var(--muted); padding:6px 0; user-select:none; }
+      .acard .amiss > summary:hover { color:var(--accent); }
+      .acard .amiss[open] > summary { margin-bottom:8px; }
+      .acard button.arm { padding:6px 14px; }
+      .acard button.del { border:none; background:transparent; color:var(--muted); font-size:18px; line-height:1; padding:2px 6px; }
+      .acard button.del:hover { color:var(--bad); }
+      /* modal */
+      .modal-back { position:fixed; inset:0; background:rgba(20,16,12,.5); display:flex; align-items:center; justify-content:center; z-index:80; padding:20px; }
+      .modal { background:var(--panel); border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); padding:22px; width:420px; max-width:100%; }
+      .modal .fld { display:flex; flex-direction:column; gap:5px; margin-bottom:12px; font-size:13px; }
+      .modal .fld > span { color:var(--muted); font-weight:600; }
+      .modal .fld em { color:var(--muted); font-weight:400; font-style:normal; font-size:11px; }
+      .modal .fldhint { color:var(--muted); font-size:11px; }
+      .modal input { font:inherit; padding:8px 10px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); }
+      .modal input:hover { border-color:var(--accent); }
+      .modal input:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 20%, transparent); outline:none; }
+      /* dropdowns that actually LOOK like dropdowns — chevron + ring + shadow */
+      .selwrap { position:relative; display:block; }
+      .selwrap::after { content:""; position:absolute; right:13px; top:50%; width:11px; height:11px; transform:translateY(-60%) rotate(45deg); border:2px solid var(--muted); border-top:0; border-left:0; pointer-events:none; transition:border-color .15s ease; }
+      .selwrap:hover::after { border-color:var(--accent); }
+      .modal select { font:inherit; width:100%; padding:9px 34px 9px 12px; border:1px solid var(--line); border-radius:8px; background:var(--bg); color:var(--ink); cursor:pointer; appearance:none; -webkit-appearance:none; box-shadow:0 1px 2px rgba(0,0,0,.18); }
+      .modal select:hover { border-color:var(--accent); }
+      .modal select:focus { border-color:var(--accent); box-shadow:0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent); outline:none; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div>
+          <h1>RetriEval</h1>
+          <div class="sub">retrieval evaluator — LessTokenify vs baselines</div>
+        </div>
+        <div class="spacer"></div>
+        <span id="repoPath" class="repo hidden" title="Click to choose a different repository"></span>
+        <button id="pick" class="hidden">Change repo…</button>
+        <button id="themeBtn" class="iconbtn" title="Switch appearance" aria-label="Switch between dark and light appearance"></button>
+      </header>
+
+      <div id="standaloneNote" class="warnbox hidden">
+        Viewer mode (no evaluator backend detected). Load a results file to inspect it.
+        <input type="file" id="loadFile" accept="application/json" />
+      </div>
+
+      <div id="progress" class="panel hidden">
+        <div><span class="phase" id="prPhase">Starting…</span></div>
+        <div class="msg" id="prMsg"></div>
+        <div class="bar"><i id="prBar"></i></div>
+      </div>
+
+      <div id="report" class="hidden">
+        <div class="panel">
+          <div class="reportbar"><span class="badge" id="badge">–</span><div class="spacer"></div><button id="runAgain" title="Run the benchmark again on the same repository">↻ Run again</button><button id="saveMd" title="Export this report as a Markdown file">⬇ Save report (.md)</button></div>
+          <div class="verdict"><span class="plain" id="plain"></span></div>
+          <table class="cmp">
+            <thead><tr>
+              <th>Retriever</th>
+              <th title="Of the files that actually matter for a question, how many did it return? Higher is better.">Recall</th>
+              <th title="Of the files it returned, how many actually mattered? Low precision = padded with junk.">Precision</th>
+              <th title="Median time to retrieve context for one query. No LLM time included.">Speed (median)</th>
+              <th title="How much context it hands the LLM per query (o200k tokens). Fewer = cheaper.">Tokens / query</th>
+              <th title="Token savings compared to reading the whole matched files.">vs whole-file</th>
+              <th style="opacity:.6" title="The weighted per-category benchmark score — secondary summary metric.">Composite</th>
+            </tr></thead>
+            <tbody id="cmpBody"></tbody>
+          </table>
+          <div class="note" id="tokNote"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Paraphrase robustness — recall by how much the query names the code</h2>
+          <div class="legend" id="olLegend"></div>
+          <div id="overlaps"></div>
+          <div class="note" id="olNote"></div>
+        </div>
+
+        <div class="panel" id="fairnessPanel">
+          <h2>Question authorship & fairness</h2>
+          <p class="note" style="margin-top:0" id="fairIntro"></p>
+          <table class="cmp" id="fairTable">
+            <thead><tr id="fairHead"></tr></thead>
+            <tbody id="fairBody"></tbody>
+          </table>
+          <div class="note" id="fairNote"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Quality by question type</h2>
+          <div class="legend" id="legend"></div>
+          <div id="cats"></div>
+        </div>
+
+        <div class="panel">
+          <h2>Where it fails (worst misses)</h2>
+          <div class="filters" id="filters"></div>
+          <div id="misses"></div>
+        </div>
+        <div class="foot" id="foot"></div>
+      </div>
+
+      <div id="hero" class="panel herobox">
+        <div class="hero-title" id="heroTitle">Benchmark a repository's code retrieval</div>
+        <div class="hero-steps" id="heroSteps">
+          <div class="step"><span class="stepnum">1</span> Pick any TypeScript/JavaScript repo — it is copied to a sandbox, never modified</div>
+          <div class="step"><span class="stepnum">2</span> RetriEval builds its own answer key from the code, then quizzes LessTokenify, grep and whole-file reading on it</div>
+          <div class="step"><span class="stepnum">3</span> Read the verdict: who finds the right code, at what speed and token cost</div>
+        </div>
+        <button id="heroPick" class="primary heroCta">📁 &nbsp;Select a repository…</button>
+        <button id="heroRun" class="primary heroCta hidden">▶ &nbsp;Run evaluation</button>
+        <div id="heroRepo" class="hero-repo hidden">
+          <div class="hero-repopath" id="heroRepoPath" title="Click to choose a different repository"></div>
+        </div>
+        <div class="hero-sub" id="heroSub">A full run takes a couple of minutes.</div>
+      </div>
+
+      <div class="panel hidden" id="agentPanel">
+        <h2>Agent retrievers — bring your own <span class="tag">non-deterministic</span></h2>
+        <p class="note" style="margin-top:0">
+          Pit an LLM agent (your own <code>claude</code>/<code>codex</code>) against the same answer key, on a
+          <b>sample</b> of the questions. Measures two axes: retrieval quality <i>and</i> cost-of-searching
+          (tokens + seconds the agent spends). <b>Add</b> your contestants now; each card's <b>Run</b> lights up once
+          the benchmark has been run.
+        </p>
+        <div id="agentCards"></div>
+        <button id="addRetriever" style="margin-top:6px">+ Add retriever</button>
+        <div class="note" id="agentNote"></div>
+      </div>
+    </div>
+
+    <div id="addModal" class="modal-back hidden">
+      <div class="modal">
+        <div class="pop-title">Add an agent retriever</div>
+        <p class="note" style="margin-top:0">This only <b>adds a card</b>. Nothing runs until you press Run on the card.</p>
+        <label class="fld"><span>Provider</span>
+          <div class="selwrap"><select id="mProvider">
+            <option value="claude">Claude — claude CLI</option>
+            <option value="codex">Codex — codex CLI</option>
+          </select></div>
+        </label>
+        <label class="fld"><span>Model <em>(optional)</em></span>
+          <input id="mModel" type="text" placeholder="provider default — e.g. Claude Opus 4.8" list="modelList" />
+          <datalist id="modelList">
+            <option value="claude-opus-4-8">Claude Opus 4.8</option>
+            <option value="claude-sonnet-5">Claude Sonnet 5</option>
+            <option value="claude-haiku-4-5-20251001">Claude Haiku 4.5</option>
+          </datalist>
+        </label>
+        <label class="fld"><span>Effort level</span>
+          <div class="selwrap"><select id="mEffort"></select></div>
+          <span class="fldhint" id="mEffortHint"></span>
+        </label>
+        <div class="warnbox" style="border-color:var(--bad);background:color-mix(in srgb, var(--bad) 12%, var(--panel));color:var(--bad)">
+          ⚠ Running this card spends <b>your own tokens</b> from your agent provider's quota, and can take minutes.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:6px">
+          <button id="mCancel">Cancel</button>
+          <button id="mAdd" class="primary">Add retriever</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="loginModal" class="modal-back hidden">
+      <div class="modal">
+        <div class="pop-title">Sign in to <span id="lgProvider">Claude</span></div>
+        <p class="note" style="margin-top:0">
+          A terminal window will open and run <code id="lgCmd">claude auth login</code>. Your browser then opens for you
+          to sign in to your account. Signing in is free — nothing is billed until you actually run a retriever.
+        </p>
+        <div id="lgWaiting" class="warnbox hidden" style="margin:4px 0 0">
+          Terminal opened. Finish signing in in your browser — this closes itself once you're signed in, then press
+          <b>Run</b> on the card.
+        </div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+          <button id="lgCancel">Cancel</button>
+          <button id="lgExecute" class="primary" disabled>Execute</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const $ = (id) => document.getElementById(id);
+
+      // ── theme: dark by default, persisted, toggled via sun/moon button ────
+      const SUN = `<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.5"/><path d="M12 2.5v2.4M12 19.1v2.4M2.5 12h2.4M19.1 12h2.4M4.9 4.9l1.7 1.7M17.4 17.4l1.7 1.7M19.1 4.9l-1.7 1.7M6.6 17.4l-1.7 1.7"/></svg>`;
+      const MOON = `<svg viewBox="0 0 24 24"><path d="M20.4 14.2A8.5 8.5 0 0 1 9.8 3.6a8.5 8.5 0 1 0 10.6 10.6z"/></svg>`;
+      const applyTheme = (t) => {
+        document.documentElement.dataset.theme = t;
+        // show the icon of the mode you'd SWITCH TO
+        $("themeBtn").innerHTML = t === "dark" ? SUN : MOON;
+        $("themeBtn").title = t === "dark" ? "Switch to light appearance" : "Switch to dark appearance";
+        try { localStorage.setItem("retrieval-theme", t); } catch {}
+      };
+      let theme = "dark";
+      try { theme = localStorage.getItem("retrieval-theme") || "dark"; } catch {}
+      $("themeBtn").addEventListener("click", () => { theme = theme === "dark" ? "light" : "dark"; applyTheme(theme); });
+      applyTheme(theme);
+
+      // save-report button
+      $("saveMd").addEventListener("click", saveReport);
+      const pctS = (x) => (x == null ? "–" : Math.round(x) + "%");
+      const RCOLOR = { lesstokenify: "var(--r-lt)", ripgrep: "var(--r-rg)", wholefile: "var(--r-wf)" };
+      const barColor = (v) => (v >= 0.7 ? "var(--good)" : v >= 0.4 ? "var(--warn)" : "var(--bad)");
+      const catSay = {
+        Location: "finds the file that defines a symbol",
+        Relationship: 'answers "what depends on / imports X"',
+        Flow: "surfaces the functions in a call chain",
+        Architecture: "points at the right subsystem",
+      };
+
+      let CURRENT = null, missRetriever = "lesstokenify", missCat = "All";
+
+      function renderReport(rep) {
+        CURRENT = rep;
+        $("hero").classList.add("hidden");
+        $("progress").classList.add("hidden");
+        $("report").classList.remove("hidden");
+
+        const S = rep.summaryByRetriever;
+        const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
+        // "primary" = LessTokenify when it's in the run, else the first retriever.
+        // LT is optional, so nothing below may assume it exists.
+        const primary = rep.retrievers.includes("lesstokenify") ? "lesstokenify" : rep.retrievers[0];
+        const hasLT = rep.retrievers.includes("lesstokenify");
+        if (!rep.retrievers.includes(missRetriever)) missRetriever = primary;
+
+        // comparison table — raw metrics first-class (VISION.md)
+        const body = $("cmpBody");
+        body.innerHTML = "";
+        const fmtMs = (x) => (x == null ? "–" : x >= 1000 ? (x / 1000).toFixed(1) + " s" : Math.round(x) + " ms");
+        for (const n of rep.retrievers) {
+          const h = S[n].headline;
+          const tr = document.createElement("tr");
+          if (n === "lesstokenify") tr.className = "lt";
+          tr.innerHTML =
+            `<td><span class="rname"><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span></td>` +
+            `<td><span class="big" style="color:${barColor((h.mean_recall_pct||0)/100)}">${pctS(h.mean_recall_pct)}</span>` +
+            `<span class="qbar"><i style="width:${h.mean_recall_pct||0}%;background:${barColor((h.mean_recall_pct||0)/100)}"></i></span></td>` +
+            `<td>${pctS(h.mean_precision_pct)}</td>` +
+            `<td>${fmtMs(h.median_latency_ms)}${n === "lesstokenify" && h.index_build_ms ? `<span class="tag" title="one-time index build">+${fmtMs(h.index_build_ms)} build</span>` : ""}</td>` +
+            `<td>${h.mean_context_tokens?.toLocaleString() ?? "–"}</td>` +
+            `<td>${n === rep.baselineRetriever ? "—" : pctS(h.token_reduction_pct) + " fewer"}</td>` +
+            `<td style="opacity:.6">${pctS(h.mean_score_pct)}</td>`;
+          body.appendChild(tr);
+        }
+
+        // verdict on raw recall (VISION: recall is the #1 metric)
+        const b = $("badge");
+        if (hasLT) {
+          const lt = S.lesstokenify.headline;
+          const baselines = rep.retrievers.filter((n) => n !== "lesstokenify");
+          const bestBase = baselines.reduce((m, n) => (S[n].headline.mean_recall_pct > S[m].headline.mean_recall_pct ? n : m), baselines[0]);
+          const bb = S[bestBase].headline;
+          let cls, txt, plain;
+          if (lt.mean_recall_pct >= bb.mean_recall_pct) {
+            cls = "good"; txt = "LessTokenify leads";
+            plain = `LessTokenify matches or beats every baseline on recall (${pctS(lt.mean_recall_pct)}) while using ${pctS(lt.token_reduction_pct)} fewer tokens than reading whole files.`;
+          } else if (lt.mean_recall_pct >= bb.mean_recall_pct - 8) {
+            cls = "warn"; txt = "Competitive";
+            plain = `LessTokenify's recall (${pctS(lt.mean_recall_pct)}) is close to the best baseline, ${label(bestBase)} (${pctS(bb.mean_recall_pct)}), at ${pctS(lt.token_reduction_pct)} fewer tokens than whole-file.`;
+          } else {
+            cls = "bad"; txt = "Baselines win here";
+            plain = `On these questions ${label(bestBase)} finds the relevant files more often (${pctS(bb.mean_recall_pct)} vs ${pctS(lt.mean_recall_pct)})` +
+              ((S.ripgrep?.headline.mean_context_tokens ?? Infinity) < lt.mean_context_tokens ? `, and grep does it with fewer tokens.` : `.`);
+          }
+          b.className = "badge " + cls;
+          b.textContent = txt;
+          $("plain").textContent = plain;
+        } else {
+          // neutral harness view — no LessTokenify in this run
+          const leader = rep.retrievers.reduce((m, n) => (S[n].headline.mean_recall_pct > S[m].headline.mean_recall_pct ? n : m), rep.retrievers[0]);
+          b.className = "badge";
+          b.textContent = "Comparison";
+          $("plain").textContent = `Comparing ${rep.retrievers.length} retrievers on ${rep.repo.name}. Highest recall: ${label(leader)} (${pctS(S[leader].headline.mean_recall_pct)}). Add LessTokenify (or your own retriever) to put it in the ring.`;
+        }
+        $("tokNote").textContent =
+          `Raw file-level metrics over ${S[primary].counts.total} query variants on ${rep.repo.name} (${rep.repo.files} files). ` +
+          `Whole-file is the token-cost baseline. Speed excludes any LLM time. Tokens counted with ${rep.tokenizer || "estimator"}. ` +
+          `Composite = the weighted per-category score (secondary).`;
+
+        // paraphrase-robustness panel (overlap buckets)
+        const olBox = $("overlaps");
+        olBox.innerHTML = "";
+        $("olLegend").innerHTML = rep.retrievers.map((n) => `<span><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span>`).join("");
+        const OL = [
+          { key: "exact", label: "Exact — query contains the symbol/file name", hint: "easiest: any lexical tool should win" },
+          { key: "partial", label: "Partial — only word fragments of the name", hint: "e.g. “add lead” for addLead" },
+          { key: "none", label: "None — describes behavior, names nothing", hint: "the paraphrase blind-spot test" },
+        ];
+        let anyNone = false;
+        for (const o of OL) {
+          const el = document.createElement("div");
+          el.className = "catrow";
+          let rows = "";
+          for (const n of rep.retrievers) {
+            const v = (S[n].by_overlap || {})[o.key];
+            const s = v ? v.mean_recall_pct : null;
+            if (o.key === "none" && v) anyNone = true;
+            rows += `<div class="gbar"><span class="lbl">${label(n)}</span><span class="track"><i style="width:${s ?? 0}%;background:${RCOLOR[n]}"></i></span><span class="val">${s == null ? "–" : Math.round(s) + "%"}</span></div>`;
+          }
+          const n0 = (S[primary].by_overlap || {})[o.key]?.n || 0;
+          el.innerHTML = `<div class="name">${o.label} <span class="tag">${n0} queries</span> <span style="color:var(--muted);font-weight:400">— ${o.hint}</span></div>${rows}`;
+          olBox.appendChild(el);
+        }
+        $("olNote").textContent = anyNone
+          ? `Recall per bucket. If all retrievers collapse on “none”, retrieval is purely lexical — queries that describe behavior without naming code will miss. This is the panel that keeps the benchmark honest.`
+          : `No zero-overlap (“none”) paraphrases available for this repo — they come from the curated control set or LLM-authored questions. Buckets shown are mechanical only.`;
+
+        // legend
+        $("legend").innerHTML = rep.retrievers.map((n) => `<span><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span>`).join("");
+
+        // category grouped bars
+        const cats = [...new Set(rep.retrievers.flatMap((n) => Object.keys(S[n].by_category)))];
+        const cbox = $("cats");
+        cbox.innerHTML = "";
+        for (const c of cats) {
+          const el = document.createElement("div");
+          el.className = "catrow";
+          let rows = "";
+          for (const n of rep.retrievers) {
+            const v = S[n].by_category[c];
+            const s = v ? v.mean_score : 0;
+            rows += `<div class="gbar"><span class="lbl">${label(n)}</span><span class="track"><i style="width:${Math.round(s*100)}%;background:${RCOLOR[n]}"></i></span><span class="val">${Math.round(s*100)}%</span></div>`;
+          }
+          const n0 = cats && (S[primary].by_category[c]?.n || "");
+          el.innerHTML = `<div class="name">${c} <span class="tag">${n0} Qs</span> <span style="color:var(--muted);font-weight:400">— ${catSay[c]||""}</span></div>${rows}`;
+          cbox.appendChild(el);
+        }
+
+        renderFairness(rep);
+        showAgentPanel();
+        buildFilters();
+        renderMisses();
+        $("foot").textContent =
+          `${rep.retrievers.length} retrievers · ${S[primary].counts.total} questions · answer key: ${rep.dumpStats.symbols} symbols, ${rep.dumpStats.callEdges} call edges · ${new Date(rep.generatedAt).toLocaleString()}`;
+      }
+
+      function buildFilters() {
+        const rep = CURRENT;
+        const f = $("filters");
+        f.innerHTML = "";
+        const rlabel = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
+        const mkLabel = (t) => { const s = document.createElement("span"); s.className = "flabel"; s.textContent = t; return s; };
+        f.appendChild(mkLabel("system"));
+        const rgrp = document.createElement("div"); rgrp.className = "grp";
+        for (const n of rep.retrievers) {
+          const b = document.createElement("button");
+          b.textContent = rlabel(n); b.className = n === missRetriever ? "on" : "";
+          b.onclick = () => { missRetriever = n; buildFilters(); renderMisses(); };
+          rgrp.appendChild(b);
+        }
+        f.appendChild(rgrp);
+        const sep = document.createElement("div"); sep.className = "sep"; f.appendChild(sep);
+        f.appendChild(mkLabel("question type"));
+        const cats = ["All", ...new Set(rep.retrievers.flatMap((n) => Object.keys(rep.summaryByRetriever[n].by_category)))];
+        const cgrp = document.createElement("div"); cgrp.className = "grp";
+        for (const c of cats) {
+          const b = document.createElement("button");
+          b.textContent = c; b.className = c === missCat ? "on" : "";
+          b.onclick = () => { missCat = c; buildFilters(); renderMisses(); };
+          cgrp.appendChild(b);
+        }
+        f.appendChild(cgrp);
+      }
+
+      function renderMisses() {
+        const box = $("misses");
+        box.innerHTML = "";
+        let rows = CURRENT.results.filter((r) => { const d = r.by[missRetriever].score_detail; return d.score != null && d.score < 0.5; });
+        if (missCat !== "All") rows = rows.filter((r) => r.category === missCat);
+        rows.sort((a, b) => a.by[missRetriever].score_detail.score - b.by[missRetriever].score_detail.score);
+        rows = rows.slice(0, 25);
+        if (!rows.length) { box.innerHTML = `<div class="empty">No misses in this view 🎉</div>`; return; }
+        for (const r of rows) {
+          const rr = r.by[missRetriever];
+          const returned = rr.returned.map((x) => x.file.split("/").pop()).join(", ");
+          const correct = (r.ground_truth.answer_text || "").slice(0, 160);
+          const el = document.createElement("div");
+          el.className = "miss";
+          el.innerHTML =
+            `<div class="q">${esc(r.query)} <span class="tag">${r.category}</span>${r.overlap ? ` <span class="tag">${r.overlap}-overlap</span>` : ""} <span class="big" style="color:${barColor(rr.score_detail.score)}">${Math.round(rr.score_detail.score*100)}%</span></div>` +
+            `<div class="row"><span class="k">returned</span><span class="v">${esc(returned)}</span></div>` +
+            `<div class="row"><span class="k">correct</span><span class="v">${esc(correct)}</span></div>`;
+          box.appendChild(el);
+        }
+      }
+
+      function esc(s) { return String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+      // ── fairness / authorship strata ──────────────────────────────────────
+      const STRAT_LABEL = { control: "Control (human)", generated: "Generated (mechanical)", llm: "LLM-authored" };
+      function renderFairness(rep) {
+        const f = rep.fairness;
+        const panel = $("fairnessPanel");
+        if (!f || !f.by_stratum) { panel.classList.add("hidden"); return; }
+        panel.classList.remove("hidden");
+        const strata = ["control", "generated", "llm"].filter((s) => f.by_stratum[s] && Object.keys(f.by_stratum[s]).length);
+        const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
+        const c = rep.questionCounts || {};
+        $("fairIntro").innerHTML =
+          `Recall per retriever, split by who <b>wrote</b> the question — reported separately so the human ruler is never hidden behind an average. ` +
+          `Bank: ${c.control || 0} control · ${c.generated || 0} generated · ${c.llm || 0} llm-authored.`;
+
+        $("fairHead").innerHTML = `<th>Retriever</th>` + strata.map((s) => `<th>${STRAT_LABEL[s]}</th>`).join("");
+        const body = $("fairBody");
+        body.innerHTML = "";
+        for (const n of rep.retrievers) {
+          const tds = strata.map((s) => {
+            const v = f.by_stratum[s][n];
+            return `<td>${v && v.mean_recall_pct != null ? `${pctS(v.mean_recall_pct)} <span style="color:var(--muted)">(${v.n})</span>` : "–"}</td>`;
+          }).join("");
+          const tr = document.createElement("tr");
+          if (n === "lesstokenify") tr.className = "lt";
+          tr.innerHTML = `<td><span class="rname"><span class="dot" style="background:${RCOLOR[n]}"></span>${label(n)}</span></td>${tds}`;
+          body.appendChild(tr);
+        }
+
+        const bits = [];
+        const g = f.easiness && f.easiness.generated;
+        if (g) bits.push(`Generated questions run <b>${g.gap_pct >= 0 ? "+" : ""}${g.gap_pct}pp</b> easier than the human control set (${pctS(g.stratum_recall_pct)} vs ${pctS(g.control_recall_pct)} mean recall) — the auto-questions flatter every retriever.`);
+        if (f.home_field && f.home_field.length)
+          for (const h of f.home_field) bits.push(`Home-field: ${esc(h.author)} scores <b>${h.delta_pct >= 0 ? "+" : ""}${h.delta_pct}pp</b> on its own questions vs the human control (${pctS(h.own_recall_pct)} vs ${pctS(h.control_recall_pct)}).`);
+        else if (f.note) bits.push(f.note);
+        $("fairNote").innerHTML = bits.join(" ");
+      }
+
+      // ── agent retrievers (bring your own) ─────────────────────────────────
+      let agentCards = []; // { id, provider, model, effort, running, result, error, live }
+      let cardSeq = 0;
+      let runningCardId = null;
+
+      // live "what the agent is doing" panel, driven by streamed tool-call events
+      function liveHtml(live) {
+        const total = live.total || 0, done = live.done || 0;
+        const pct = total ? Math.round((done / total) * 100) : 0;
+        const cur = total ? Math.min(done + 1, total) : "…";
+        const log = (live.log || []).slice(-6).map((s) => `<div class="alog-line">${esc(s)}</div>`).join("");
+        return `<div class="alive">
+          <div class="alive-top"><span class="alive-count">Query ${cur} / ${total || "?"}</span><span class="alive-pct">${pct}%</span></div>
+          <div class="track"><i style="width:${pct}%;background:var(--accent)"></i></div>
+          ${live.query ? `<div class="alive-q">“${esc(live.query)}”</div>` : ""}
+          <div class="alive-step"><span class="alive-dot"></span>${esc(live.step || "working…")}</div>
+          ${log ? `<div class="alog">${log}</div>` : ""}
+        </div>`;
+      }
+
+      // route streamed agent-progress events to the running card's live panel
+      function onAgentProgress(p) {
+        const card = agentCards.find((c) => c.id === runningCardId);
+        if (!card) return;
+        const live = card.live || (card.live = { log: [] });
+        if (typeof p.done === "number") live.done = p.done;
+        if (typeof p.total === "number") live.total = p.total;
+        if (p.query) live.query = p.query;
+        if (p.step && p.step !== "done" && p.step !== "starting…") {
+          live.step = p.step;
+          if (live.log[live.log.length - 1] !== p.step) live.log.push(p.step);
+        } else if (p.step) {
+          live.step = p.step === "starting…" ? "starting…" : live.step;
+        }
+        const holder = document.getElementById("live-" + card.id);
+        if (holder) holder.innerHTML = liveHtml(live);
+        else renderAgentCards();
+      }
+
+      function sampleForAgent(rep, n) {
+        // deterministic sample of WHICH questions (agent answers stay non-deterministic),
+        // across all variants so semantic none-overlap queries are represented.
+        const rows = rep.results.filter((r) => !r.negative && r.ground_truth);
+        const scored = rows.map((r) => {
+          let h = 0; const key = (r.id || "") + "|" + (r.query || "");
+          for (const ch of key) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+          return { r, h };
+        });
+        scored.sort((a, b) => a.h - b.h);
+        return scored.slice(0, Math.min(n, scored.length)).map(({ r }) => ({ id: r.id, query: r.query, category: r.category, overlap: r.overlap, negative: r.negative, ground_truth: r.ground_truth }));
+      }
+
+      function showAgentPanel() {
+        const panel = $("agentPanel");
+        // agents need the backend to run against; hide entirely in viewer mode
+        if (!api || !api.runAgentRetriever) { panel.classList.add("hidden"); return; }
+        panel.classList.remove("hidden");
+        renderAgentCards();
+      }
+
+      function renderAgentCards() {
+        const box = $("agentCards");
+        box.innerHTML = "";
+        if (!agentCards.length) {
+          $("agentNote").textContent = "No agent retrievers yet. Add one to line it up as a contestant; it runs on a sample of questions and is scored against the same answer key as the deterministic retrievers.";
+          return;
+        }
+        $("agentNote").textContent = "";
+        for (const card of agentCards) box.appendChild(agentCardEl(card));
+      }
+
+      // The same depth LT/lexical get — overlap buckets, per-category recall, worst misses —
+      // rendered inside the agent card from the per-question rows the run returned.
+      function agentDetailHtml(r) {
+        const bar = (label, pct) =>
+          `<div class="gbar"><span class="lbl">${esc(label)}</span><span class="track"><i style="width:${pct == null ? 0 : pct}%;background:${barColor((pct || 0) / 100)}"></i></span><span class="val">${pct == null ? "–" : Math.round(pct) + "%"}</span></div>`;
+
+        let overlapHtml = "";
+        const OL = [["exact", "Exact — names the code"], ["partial", "Partial — word fragments"], ["none", "None — behavior only"]];
+        const bo = r.by_overlap || {};
+        if (OL.some(([k]) => bo[k])) {
+          overlapHtml =
+            `<div class="adetail-h">Recall by paraphrase overlap <span style="color:var(--muted);font-weight:400">— does the agent beat lexical on “none”?</span></div>` +
+            OL.filter(([k]) => bo[k]).map(([k, l]) => bar(`${l} (${bo[k].n})`, bo[k].recall_pct)).join("");
+        }
+
+        let catHtml = "";
+        const bc = r.by_category || {};
+        if (Object.keys(bc).length) {
+          catHtml =
+            `<div class="adetail-h">Recall by question type</div>` +
+            Object.entries(bc).map(([c, v]) => bar(`${c} (${v.n})`, v.recall_pct)).join("");
+        }
+
+        const misses = (r.results || [])
+          .filter((x) => typeof x.recall === "number")
+          .sort((a, b) => a.recall - b.recall)
+          .slice(0, 10);
+        let missHtml = "";
+        if (misses.length) {
+          missHtml =
+            `<details class="amiss"><summary>Worst ${misses.length} queries — what it returned vs. the right answer</summary>` +
+            misses.map((m) =>
+              `<div class="miss"><div class="q">${esc(m.query)} <span class="tag">${esc(m.category)}</span>${m.overlap ? ` <span class="tag">${m.overlap}-overlap</span>` : ""} <span class="big" style="color:${barColor(m.recall)}">${Math.round(m.recall * 100)}%</span></div>` +
+              `<div class="row"><span class="k">returned</span><span class="v">${esc((m.returned || []).map((f) => f.split("/").pop()).join(", ") || "—")}</span></div>` +
+              `<div class="row"><span class="k">correct</span><span class="v">${esc((m.answer_text || "").slice(0, 160))}</span></div></div>`,
+            ).join("") +
+            `</details>`;
+        }
+
+        if (!overlapHtml && !catHtml && !missHtml) return "";
+        return `<div class="adetail">${overlapHtml}${catHtml}${missHtml}</div>`;
+      }
+
+      function agentCardEl(card) {
+        const el = document.createElement("div");
+        el.className = "acard";
+        const spec = `${card.provider} · ${card.model || "default model"} · effort ${card.effort || "default"}`;
+        let metrics = "";
+        if (card.result) {
+          const r = card.result;
+          const m = (k, v) => `<div class="m"><div class="mv">${v}</div><div class="mk">${k}</div></div>`;
+          metrics =
+            `<div class="ametrics">` +
+            m("recall", pctS(r.mean_recall_pct)) +
+            m("precision", pctS(r.mean_precision_pct)) +
+            m("median latency", r.median_latency_ms == null ? "–" : (r.median_latency_ms >= 1000 ? (r.median_latency_ms / 1000).toFixed(1) + " s" : r.median_latency_ms + " ms")) +
+            m("tokens / query", r.mean_agent_tokens == null ? "n/a" : r.mean_agent_tokens.toLocaleString()) +
+            m("total time", r.total_wall_s == null ? "–" : r.total_wall_s + " s") +
+            (r.total_cost_usd != null ? m("cost", "$" + r.total_cost_usd) : "") +
+            `</div><div class="astatus">Scored on ${r.sample_n}/${r.requested_n} sampled queries · non-deterministic. Cost-of-searching (tokens + time) is the agent's, not free like the mechanical retrievers.</div>` +
+            agentDetailHtml(r);
+        }
+        const canRun = !!CURRENT; // needs a completed benchmark (sandbox + questions)
+        let status = "";
+        if (card.running) status = `<div class="astatus">Live — the agent is searching (spends your tokens):</div><div id="live-${card.id}">${liveHtml(card.live || {})}</div>`;
+        else if (card.error) status = `<div class="astatus" style="color:var(--bad)">${esc(card.error)}</div>`;
+        else if (!canRun && !card.result) status = `<div class="astatus">Queued — press <b>Run evaluation</b> first, then this card can run against the same questions.</div>`;
+
+        el.innerHTML =
+          `<div class="ahead">` +
+          `<span class="dot" style="background:var(--accent)"></span>` +
+          `<div><div class="aname">${esc(card.model || card.provider)}</div><div class="aspec">${esc(spec)}</div></div>` +
+          `<div class="spacer"></div>` +
+          `<button class="arm primary" ${card.running || !canRun ? "disabled" : ""} title="${canRun ? "" : "Run the benchmark first"}">${card.result ? "Re-run" : "Run"}</button>` +
+          `<button class="del" title="Remove this retriever">✕</button>` +
+          `</div>${status}${metrics}`;
+
+        el.querySelector(".arm").onclick = () => runAgentCard(card);
+        el.querySelector(".del").onclick = () => { agentCards = agentCards.filter((c) => c !== card); renderAgentCards(); };
+        return el;
+      }
+
+      async function runAgentCard(card) {
+        if (!CURRENT) return;
+        // Auth gate: not installed → tell them; not logged in → launch sign-in (no error).
+        const st = await api.agentAuthStatus(card.provider);
+        if (!st.present) {
+          card.error = `No \`${card.provider}\` CLI found on this machine. Install it first, then Run again to sign in.`;
+          renderAgentCards(); return;
+        }
+        if (st.loggedIn === false) { openLoginModal(card.provider); return; }
+
+        // Logged in (or unknown for codex) → run. No confirm popup — the red quota
+        // warning is already on the card; the user opted in by adding + pressing Run.
+        const sample = sampleForAgent(CURRENT, 40);
+        card.running = true; card.error = null;
+        card.live = { done: 0, total: sample.length, query: "", step: "starting…", log: [] };
+        runningCardId = card.id;
+        renderAgentCards();
+        try {
+          card.result = await api.runAgentRetriever({
+            sandbox: CURRENT.repo.sandbox, questions: sample,
+            provider: card.provider, model: card.model || undefined, effort: card.effort || undefined,
+          });
+        } catch (e) {
+          // If it still turns out to be an auth problem, route to sign-in instead of a raw error.
+          if (/not logged in|logged out|\bauth/i.test(e.message || "")) { card.running = false; runningCardId = null; renderAgentCards(); openLoginModal(card.provider); return; }
+          card.error = "Run failed: " + (e.message || e);
+        } finally {
+          card.running = false; runningCardId = null; card.live = null; renderAgentCards();
+        }
+      }
+
+      // ── provider / effort option data (truthful to the real CLIs) ─────────
+      const PROVIDER_LABEL = { claude: "Claude", codex: "Codex" };
+      // claude --effort accepts exactly: low, medium, high, xhigh, max. There is no
+      // "extra"/"ultracode" effort — xhigh IS extra-high; ultracode is a separate mode.
+      const EFFORTS = {
+        claude: [["", "Provider default"], ["low", "Low"], ["medium", "Medium"], ["high", "High"], ["xhigh", "Extra-high (xhigh)"], ["max", "Max"]],
+        codex: [["", "Provider default"]],
+      };
+      function fillEfforts() {
+        const prov = $("mProvider").value;
+        const sel = $("mEffort");
+        sel.innerHTML = "";
+        for (const [v, l] of EFFORTS[prov] || EFFORTS.claude) {
+          const o = document.createElement("option"); o.value = v; o.textContent = l; sel.appendChild(o);
+        }
+        $("mEffortHint").textContent = prov === "claude"
+          ? "Real claude --effort levels: low · medium · high · xhigh · max."
+          : "Codex runs at its own default; this runner doesn't set a codex effort flag.";
+      }
+
+      // ── sign-in modal: 10s Execute countdown → launch terminal → poll status ─
+      let lgProvider = "claude", lgCountdown = null, lgPoll = null;
+      function openLoginModal(provider) {
+        lgProvider = provider;
+        $("lgProvider").textContent = PROVIDER_LABEL[provider] || provider;
+        $("lgCmd").textContent = provider === "codex" ? "codex login" : "claude auth login";
+        $("lgWaiting").classList.add("hidden");
+        $("loginModal").classList.remove("hidden");
+        const ex = $("lgExecute");
+        ex.classList.remove("hidden");
+        let n = 10;
+        ex.disabled = true; ex.textContent = `Execute (${n})`;
+        clearInterval(lgCountdown);
+        lgCountdown = setInterval(() => {
+          n -= 1;
+          if (n <= 0) { clearInterval(lgCountdown); ex.disabled = false; ex.textContent = "Execute"; }
+          else ex.textContent = `Execute (${n})`;
+        }, 1000);
+      }
+      function closeLoginModal() { clearInterval(lgCountdown); clearInterval(lgPoll); $("loginModal").classList.add("hidden"); }
+
+      // ── Markdown export ───────────────────────────────────────────────────
+      function buildMarkdown(rep) {
+        const S = rep.summaryByRetriever;
+        const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;
+        const p = (x) => (x == null ? "–" : Math.round(x) + "%");
+        const primary = rep.retrievers.includes("lesstokenify") ? "lesstokenify" : rep.retrievers[0];
+        let md = `# RetriEval report — ${rep.repo.name}\n\n`;
+        md += `- Repository: \`${rep.repo.root}\`\n`;
+        md += `- Files: ${rep.repo.files} · Symbols: ${rep.repo.symbols}\n`;
+        md += `- Questions: ${S[primary].counts.total} query variants (${rep.curatedCount || 0} curated)\n`;
+        md += `- Tokenizer: ${rep.tokenizer || "estimate"}\n`;
+        md += `- Generated: ${new Date(rep.generatedAt).toLocaleString()}\n\n`;
+        md += `## Retriever comparison (raw metrics)\n\n`;
+        md += `| Retriever | Recall | Precision | Speed (median) | Tokens/q | vs whole-file | Composite |\n|---|---|---|---|---|---|---|\n`;
+        for (const n of rep.retrievers) {
+          const h = S[n].headline;
+          const spd = `${h.median_latency_ms} ms${n === "lesstokenify" && h.index_build_ms ? ` (+${h.index_build_ms} ms build)` : ""}`;
+          md += `| ${label(n)} | ${p(h.mean_recall_pct)} | ${p(h.mean_precision_pct)} | ${spd} | ${h.mean_context_tokens} | ${n === rep.baselineRetriever ? "—" : p(h.token_reduction_pct) + " fewer"} | ${p(h.mean_score_pct)} |\n`;
+        }
+        md += `\n## Paraphrase robustness — recall by lexical overlap\n\n`;
+        md += `| Retriever | exact | partial | none |\n|---|---|---|---|\n`;
+        for (const n of rep.retrievers) {
+          const bo = S[n].by_overlap || {};
+          const c = (o) => (bo[o] ? `${Math.round(bo[o].mean_recall_pct)}% (${bo[o].n})` : "–");
+          md += `| ${label(n)} | ${c("exact")} | ${c("partial")} | ${c("none")} |\n`;
+        }
+        const cats = [...new Set(rep.retrievers.flatMap((n) => Object.keys(S[n].by_category)))];
+        md += `\n## Composite by question type\n\n| Category | ${rep.retrievers.map(label).join(" | ")} |\n|${"---|".repeat(rep.retrievers.length + 1)}\n`;
+        for (const c of cats)
+          md += `| ${c} | ${rep.retrievers.map((n) => { const v = S[n].by_category[c]; return v ? Math.round(v.mean_score * 100) + "%" : "–"; }).join(" | ")} |\n`;
+        const misses = rep.results
+          .filter((r) => { const d = r.by[primary].score_detail; return d.score != null && d.score < 0.5; })
+          .sort((a, b) => a.by[primary].score_detail.score - b.by[primary].score_detail.score)
+          .slice(0, 15);
+        if (misses.length) {
+          md += `\n## ${label(primary)} — sample misses\n\n`;
+          for (const r of misses)
+            md += `- **${r.query}** _(${r.category}${r.overlap ? ", " + r.overlap + "-overlap" : ""})_\n  - returned: ${r.by[primary].returned.map((x) => x.file.split("/").pop()).join(", ") || "—"}\n  - correct: ${(r.ground_truth.answer_text || "").slice(0, 160)}\n`;
+        }
+        md += `\n_Generated by RetriEval._\n`;
+        return md;
+      }
+
+      async function saveReport() {
+        if (!CURRENT) return;
+        const md = buildMarkdown(CURRENT);
+        const name = `retrieval-${CURRENT.repo.name}.md`;
+        const btn = $("saveMd");
+        if (api && api.saveReport) {
+          const res = await api.saveReport(md, name);
+          if (res && res.saved) { btn.textContent = "Saved ✓"; setTimeout(() => (btn.textContent = "⬇ Save report (.md)"), 1800); }
+        } else {
+          // viewer mode: browser download fallback
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(new Blob([md], { type: "text/markdown" }));
+          a.download = name; a.click(); URL.revokeObjectURL(a.href);
+        }
+      }
+
+      function setProgress(p) {
+        $("hero").classList.add("hidden");
+        $("progress").classList.remove("hidden");
+        const PHASES = {
+          sandbox: ["Step 1 of 4", "Copying repo to a sandbox"],
+          analyze: ["Step 2 of 4", "Building the answer key from the code"],
+          questions: ["Step 3 of 4", "Writing the quiz"],
+          retrieve: ["Step 4 of 4", "Quizzing the retrievers"],
+          agent: ["Agent retriever", "Your agent CLI is retrieving (spends your tokens)"],
+          done: ["Done", "Evaluation complete"],
+        };
+        const [step, label] = PHASES[p.phase] || ["", p.phase];
+        $("prPhase").textContent = step ? `${step} — ${label}` : label;
+        $("prMsg").textContent = p.msg || "";
+        const bar = document.querySelector("#progress .bar");
+        if (p.total) {
+          bar.classList.remove("indet");
+          $("prBar").style.width = Math.round((p.done / p.total) * 100) + "%";
+        } else if (p.phase === "done") {
+          bar.classList.remove("indet");
+          $("prBar").style.width = "100%";
+        } else {
+          bar.classList.add("indet"); // busy but not countable — never look frozen
+        }
+      }
+
+      // ── wiring ────────────────────────────────────────────────────────────
+      const api = window.evalAPI;
+      let repoPath = null;
+
+      if (!api) {
+        $("standaloneNote").classList.remove("hidden");
+        $("pick").disabled = true;
+        $("heroPick").classList.add("hidden");
+        $("heroSub").textContent = "Viewer mode — load a saved results file above.";
+        $("loadFile").addEventListener("change", (e) => {
+          const f = e.target.files[0]; if (!f) return;
+          const rd = new FileReader();
+          rd.onload = () => { try { renderReport(JSON.parse(rd.result)); } catch (err) { alert("Bad report file: " + err.message); } };
+          rd.readAsText(f);
+        });
+      } else {
+        // agent-phase events drive the per-card live view; everything else drives the top bar
+        api.onProgress((p) => { if (p.phase === "agent") onAgentProgress(p); else setProgress(p); });
+
+        // ── Add-retriever modal (Add ≠ Run) ────────────────────────────────
+        const modal = $("addModal");
+        const openModal = () => { fillEfforts(); modal.classList.remove("hidden"); };
+        const closeModal = () => modal.classList.add("hidden");
+        $("addRetriever").onclick = openModal;
+        $("mCancel").onclick = closeModal;
+        $("mProvider").addEventListener("change", fillEfforts);
+        modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+        $("mAdd").onclick = () => {
+          agentCards.push({
+            id: ++cardSeq,
+            provider: $("mProvider").value,
+            model: $("mModel").value.trim(),
+            effort: $("mEffort").value,
+            running: false, result: null, error: null,
+          });
+          $("mModel").value = "";
+          closeModal();
+          renderAgentCards();
+        };
+
+        // ── sign-in modal wiring ────────────────────────────────────────────
+        const loginModal = $("loginModal");
+        $("lgCancel").onclick = closeLoginModal;
+        loginModal.addEventListener("click", (e) => { if (e.target === loginModal) closeLoginModal(); });
+        $("lgExecute").onclick = async () => {
+          await api.agentLogin(lgProvider);
+          $("lgWaiting").classList.remove("hidden");
+          const ex = $("lgExecute"); ex.disabled = true; ex.textContent = "Terminal opened…";
+          // poll auth status; auto-close + refresh cards once signed in
+          clearInterval(lgPoll);
+          lgPoll = setInterval(async () => {
+            const s = await api.agentAuthStatus(lgProvider);
+            if (s.loggedIn) { closeLoginModal(); renderAgentCards(); }
+          }, 2500);
+        };
+
+        // single Escape handler closes whichever modal is open
+        document.addEventListener("keydown", (e) => {
+          if (e.key !== "Escape") return;
+          if (!loginModal.classList.contains("hidden")) closeLoginModal();
+          else closeModal();
+        });
+
+        const applyPicked = (p) => {
+          repoPath = p;
+          $("repoPath").textContent = p;
+          $("repoPath").title = p + "  (click to change)";
+          // hero becomes the action center: Select → Run, path shown below, readable
+          $("heroTitle").textContent = "Ready to benchmark";
+          $("heroSteps").classList.add("hidden");
+          $("heroPick").classList.add("hidden");
+          $("heroRun").classList.remove("hidden");
+          $("heroRepoPath").textContent = p;
+          $("heroRepo").classList.remove("hidden");
+          $("heroSub").textContent = "Add any agent retrievers below, then press Run evaluation.";
+          $("heroRun").classList.add("pulse");
+          setTimeout(() => $("heroRun").classList.remove("pulse"), 4500);
+          showAgentPanel(); // let the user line up contestants BEFORE running
+        };
+        const pickRepo = async () => { const p = await api.pickRepo(); if (p) applyPicked(p); };
+        $("pick").onclick = pickRepo;
+        $("heroPick").onclick = pickRepo;
+        $("heroRepoPath").onclick = pickRepo;
+        $("repoPath").onclick = pickRepo;
+
+        const runEvaluation = async () => {
+          if (!repoPath) return;
+          for (const c of agentCards) { c.result = null; c.error = null; } // stale vs the new sandbox
+          $("heroRun").disabled = true; $("pick").disabled = true; $("runAgain").disabled = true;
+          $("heroRun").textContent = "Running…";
+          try {
+            renderReport(await api.runEval(repoPath, {}));
+            $("repoPath").classList.remove("hidden"); // header now carries the persistent indicator
+            $("pick").classList.remove("hidden");
+          } catch (e) {
+            alert("Evaluation failed: " + (e.message || e));
+            $("progress").classList.add("hidden"); $("hero").classList.remove("hidden");
+          } finally {
+            $("heroRun").disabled = false; $("pick").disabled = false; $("runAgain").disabled = false;
+            $("heroRun").textContent = "▶  Run evaluation";
+          }
+        };
+        $("heroRun").onclick = runEvaluation;
+        $("runAgain").onclick = runEvaluation;
+      }
+    </script>
+  </body>
+</html>
