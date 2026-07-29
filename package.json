@@ -7,9 +7,9 @@
   "type": "module",
   "main": "gui/main.mjs",
   "scripts": {
-    "analyze": "tsx tools/staticAnalysis.ts",
+    "analyze": "node tools/staticAnalysis.mjs",
     "eval": "node src/eval/runEval.mjs",
-    "test": "node --test",
+    "test": "node --test test/",
     "gui": "electron gui/main.mjs",
     "dist": "electron-builder"
   },
