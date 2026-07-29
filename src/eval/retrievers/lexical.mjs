@@ -21,7 +21,9 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { estimateTokens } from "../tokens.mjs";
 
-const TOP_K = 5;
+// Shared across every retriever (see ltAdapter.mjs) so no contestant gets an
+// uncapped recall ceiling the others don't have.
+export const TOP_K = 5;
 const SNIPPET_CHAR_CAP = 2000; // comparable to LT's per-file cap
 
 const STOP = new Set([

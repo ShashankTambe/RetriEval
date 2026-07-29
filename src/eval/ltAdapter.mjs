@@ -14,6 +14,7 @@ import { pathToFileURL, fileURLToPath } from "node:url";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { estimateTokens } from "./tokens.mjs";
+import { TOP_K } from "./retrievers/lexical.mjs";
 
 /**
  * Locate LessTokenify's retrieval entry, or return null if it isn't installed.
@@ -67,7 +68,8 @@ function quiet(fn) {
  */
 export async function ltRetrieve(repoRoot, query, ctx = {}) {
   const runGraphify = await loadLT(ctx.ltRunnerPath);
-  const raw = quiet(() => runGraphify(repoRoot, query)) || [];
+  // Same TOP_K as grep/whole-file: no retriever gets an uncapped recall ceiling.
+  const raw = (quiet(() => runGraphify(repoRoot, query)) || []).slice(0, TOP_K);
   const files = raw.map((r) => {
     const file = norm(r.filePath);
     const snippet = r.snippet || "";

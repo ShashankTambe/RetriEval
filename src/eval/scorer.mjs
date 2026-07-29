@@ -32,6 +32,16 @@ export function relevantFiles(q) {
  * Raw file-level Precision/Recall per VISION.md, of everything retrieved, how
  * much was relevant; of everything relevant, how much was retrieved. No
  * weighting, no snippet-level credit. Null for negatives / empty ground truth.
+ *
+ * LIMITATION (by design, not an oversight): this is file-level only. A
+ * retriever that returns the right FILE but whose slice omits the actual
+ * symbol counts as a full hit here, same as one that returned the symbol
+ * itself. Location's scoreQuestion() applies the stricter symbol-aware
+ * matchTarget() (1.0 symbol-in-slice / 0.5 right-file-only / 0 miss) for its
+ * own composite, but that distinction does NOT propagate into these headline
+ * numbers or into by_overlap (the paraphrase-robustness table). Read "none"-
+ * bucket recall as "found the right file while understanding the intent",
+ * not as "found the exact code needed."
  */
 export function rawPR(q, returned) {
   if (q.negative) return { precision: null, recall: null };
@@ -70,6 +80,13 @@ export function scoreQuestion(q, ret) {
     }
     const good = new Set([...(g.required || []), ...(g.supporting || [])].map((x) => x.file));
     const precision = k ? returned.filter((r) => good.has(r.file)).length / k : 0;
+    // Weights: recall dominates (0.7) because "did it find the answer at all"
+    // is the question this category exists to ask; mrr (0.2) rewards surfacing
+    // it near the top of the ranking, since a buried hit still costs a reader
+    // time; precision (0.1) is a minor tiebreaker only, NOT this tool's
+    // precision measure, that's rawPR() above, reported separately and
+    // first-class in the headline table. Don't read this composite as a
+    // recall/precision tradeoff, it's a recall-primary quality score.
     return {
       category: q.category,
       score: 0.7 * recall + 0.2 * mrr + 0.1 * precision,
@@ -87,6 +104,12 @@ export function scoreQuestion(q, ret) {
     const ceiling = Math.min(1, recall / Math.min(1, k / deps.length));
     const precision = k ? returned.filter((r) => deps.includes(r.file)).length / k : 0;
     const f1 = precision + recall ? (2 * precision * recall) / (precision + recall) : 0;
+    // Weights: ceiling (0.6) is recall normalized against what's achievable
+    // within TOP_K, so a question with more dependents than TOP_K can't be
+    // unfairly punished for a cap every retriever shares; f1 (0.4) then
+    // penalizes padding the result with irrelevant files. Ceiling gets the
+    // larger share because "found the reachable set" matters more than
+    // "found it cleanly" for a relationship question.
     return {
       category: q.category,
       score: 0.6 * ceiling + 0.4 * f1,
