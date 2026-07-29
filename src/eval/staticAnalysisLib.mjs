@@ -1,10 +1,12 @@
 /**
  * Independent static analysis (library form), the MECHANICAL answer key.
  *
- * Plain-JS/ESM port of tools/staticAnalysis.ts so the pipeline can call it
- * IN-PROCESS (no `npx tsx` child process), which is required for the packaged
- * .exe and is faster. ts-morph is pure JS at runtime; only the TS type
- * annotations are dropped. Logic is identical, including nested-method capture.
+ * THE single implementation of the answer key. The pipeline calls it in-process
+ * (no child process, which the packaged .exe needs) and tools/staticAnalysis.mjs
+ * is a thin CLI over this same function. It previously had a standalone twin in
+ * tools/, and the two drifted, so one repo could yield two different answer keys
+ * depending on which entry point you used. Keep it that way: anything that needs
+ * the mechanical key calls analyze(), it does not reimplement it.
  *
  * Anti-overfit: never imports or reuses LessTokenify. Derives every fact from
  * source directly. Returns the dump object (no file writes).
@@ -12,6 +14,7 @@
 import { Project, Node, SyntaxKind } from "ts-morph";
 import { existsSync } from "node:fs";
 import { join, relative, resolve, sep } from "node:path";
+import { SOURCE_DIRS, ROOT_ENTRIES, EXCLUDED_FROM_ANALYSIS } from "./sandbox.mjs";
 
 export function analyze(repoRootArg, commitSha = "unknown") {
   const repoRoot = resolve(repoRootArg);
@@ -27,20 +30,41 @@ export function analyze(repoRootArg, commitSha = "unknown") {
     ? join(repoRoot, "tsconfig.json")
     : undefined;
 
-  const project = new Project({
-    tsConfigFilePath,
-    skipAddingFilesFromTsConfig: true,
-    compilerOptions: { allowJs: true, jsx: 4 /* react-jsx */ },
-  });
+  // Prefer the repo's own tsconfig: it carries the path aliases that let
+  // ts-morph resolve imports, and losing those silently shrinks the import and
+  // call graphs that Relationship and Flow questions are built from. Only fall
+  // back to plain defaults if ts-morph genuinely cannot load the config (a
+  // malformed file, or a monorepo `extends` whose parent the sandbox left
+  // behind), so a crash never costs a run but a working config is never
+  // discarded either.
+  const projectOpts = { skipAddingFilesFromTsConfig: true, compilerOptions: { allowJs: true, jsx: 4 /* react-jsx */ } };
+  let project;
+  try {
+    project = new Project({ tsConfigFilePath, ...projectOpts });
+  } catch {
+    project = new Project(projectOpts);
+  }
+  // Kept in sync with sandbox.mjs SOURCE_DIRS / ROOT_ENTRIES. If these two
+  // disagree, a repo can pass the eligibility check and then be analyzed to
+  // nothing, producing an empty answer key that still looks like a clean run.
+  // `.d.ts` is excluded: declaration files describe an API surface rather than
+  // implement it, so they inflate the Location category with symbols that have
+  // no real definition site to find.
   project.addSourceFilesAtPaths([
-    join(repoRoot, "src/**/*.ts"),
-    join(repoRoot, "src/**/*.tsx"),
-    join(repoRoot, "src/**/*.js"),
-    join(repoRoot, "src/**/*.jsx"),
-    join(repoRoot, "App.tsx"),
-    join(repoRoot, "App.ts"),
-    join(repoRoot, "index.ts"),
-    join(repoRoot, "index.tsx"),
+    ...SOURCE_DIRS.flatMap((d) => [
+      join(repoRoot, `${d}/**/*.ts`),
+      join(repoRoot, `${d}/**/*.tsx`),
+      join(repoRoot, `${d}/**/*.js`),
+      join(repoRoot, `${d}/**/*.jsx`),
+    ]),
+    ...ROOT_ENTRIES.map((f) => join(repoRoot, f)),
+    `!${join(repoRoot, "**/*.d.ts")}`,
+    // Belt and braces. Both production callers sandbox the repo first, so these
+    // are already gone by the time analyze() runs; the duplication only matters
+    // when analyze() is pointed straight at a checkout (ad-hoc scripts, probing
+    // a candidate repo). Cheap insurance: next.js vendors hundreds of minified
+    // files under src/compiled, and analyzing them exhausts the V8 heap.
+    ...EXCLUDED_FROM_ANALYSIS.map((d) => `!${join(repoRoot, `**/${d}/**`)}`),
   ]);
 
   const sourceFiles = project.getSourceFiles().filter((sf) => inScope(sf.getFilePath()));

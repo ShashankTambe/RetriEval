@@ -112,6 +112,7 @@
       .pop-title { font-weight:800; margin-bottom:8px; font-size:15px; }
       /* report action bar + save button */
       .reportbar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+      .warn-banner { background:#4a3200; border:1px solid #a06a00; color:#ffd989; padding:10px 14px; border-radius:8px; margin-bottom:12px; font-size:13px; line-height:1.5; }
       #saveMd { font-size:13px; }
       #saveMd:hover { border-color:var(--accent); color:var(--accent); }
       .foot { color:var(--muted); font-size:12px; text-align:center; margin-top:8px; }
@@ -193,6 +194,7 @@
       </div>
 
       <div id="report" class="hidden">
+        <div id="reportWarnings"></div>
         <div class="panel">
           <div class="reportbar"><span class="badge" id="badge">–</span><div class="spacer"></div><button id="runAgain" title="Run the benchmark again on the same repository">↻ Run again</button><button id="saveMd" title="Export this report as a Markdown file">⬇ Save report (.md)</button></div>
           <div class="verdict"><span class="plain" id="plain"></span></div>
@@ -358,6 +360,10 @@
         $("hero").classList.add("hidden");
         $("progress").classList.add("hidden");
         $("report").classList.remove("hidden");
+
+        const warnBox = $("reportWarnings");
+        warnBox.innerHTML = (rep.warnings || [])
+          .map((w) => `<div class="warn-banner">⚠ ${w}</div>`).join("");
 
         const S = rep.summaryByRetriever;
         const label = (n) => (rep.retrieverLabels && rep.retrieverLabels[n]) || n;

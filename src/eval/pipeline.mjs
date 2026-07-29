@@ -14,7 +14,7 @@
  * Phase 0 runs EVERY time and derives ground truth independently, the tool
  * never trusts that the author knows their own repo.
  */
-import { makeSandbox, hasSource } from "./sandbox.mjs";
+import { makeSandbox, hasSource, SOURCE_DIRS, ROOT_ENTRIES } from "./sandbox.mjs";
 import { analyze } from "./staticAnalysisLib.mjs";
 import { buildQuestionBank } from "./questionBank.mjs";
 import { ltRetrieve, loadLT, findLTRunner } from "./ltAdapter.mjs";
@@ -38,10 +38,27 @@ export async function runEvaluation(repoRoot, opts = {}) {
 
   onProgress({ phase: "sandbox", msg: "Copying repo source to sandbox (your repo is untouched)…" });
   const sandbox = makeSandbox(repoRoot);
-  if (!hasSource(sandbox)) throw new Error("No src/, App.tsx or index.ts found, is this a TS/JS project?");
+  if (!hasSource(sandbox))
+    throw new Error(
+      `No source root found (looked for ${SOURCE_DIRS.map((d) => d + "/").join(", ")} and root ${ROOT_ENTRIES.join(", ")}). Is this a TS/JS project?`,
+    );
 
   onProgress({ phase: "analyze", msg: "Phase 0, independent static analysis (ts-morph)…" });
   const dump = analyze(sandbox, "gui-run");
+
+  // Refuse to benchmark an empty answer key. hasSource() only proves SOME entry
+  // point exists; it can pass on a bare root barrel file (e.g. a monorepo
+  // package whose code sits beside index.ts rather than under src/), and the
+  // analyzer then finds almost nothing. Without this guard the run completes,
+  // scores a handful of questions, and publishes a confident-looking report
+  // built on no data, which is far worse than failing outright.
+  if (dump.stats.files < 2 || dump.stats.symbols === 0) {
+    throw new Error(
+      `Static analysis found ${dump.stats.files} source file(s) and ${dump.stats.symbols} symbol(s), too few to benchmark. ` +
+      `RetriEval analyzes ${SOURCE_DIRS.map((d) => d + "/").join(" or ")} plus root entry files. ` +
+      `If this is a monorepo package whose code sits directly in the package folder, point RetriEval at a directory that has a source folder.`,
+    );
+  }
   onProgress({ phase: "analyze", msg: `Answer key: ${dump.stats.symbols} symbols, ${dump.stats.callEdges} call edges, ${dump.stats.importEdges} import edges.` });
 
   onProgress({ phase: "questions", msg: "Building question set…" });
@@ -144,6 +161,21 @@ export async function runEvaluation(repoRoot, opts = {}) {
   // Fairness: per-stratum breakdown + residual home-field bias (DECISIONS.md §D).
   const fairness = computeFairness(results, RETRIEVERS.map((r) => r.name));
 
+  // The "none" overlap bucket (query shares zero words with the answer) is the
+  // only check that catches a retriever winning on filename-matching rather than
+  // understanding the code. It can only be populated by hand-curated/authored
+  // questions (answer-key/<repo>/curated.questions.json), never by the mechanical
+  // generator, because writing a true none-overlap paraphrase requires knowing
+  // what the code DOES, which a template can't derive. Surface it loudly rather
+  // than let an empty bucket look like a clean run.
+  const noneCoverage = RETRIEVERS.some((r) => (summaryByRetriever[r.name].by_overlap.none?.n || 0) > 0);
+  const warnings = [];
+  if (!noneCoverage) {
+    const msg = `No "none"-overlap questions ran (bank has ${bank.counts.control} curated question(s) for this repo). Every retriever's paraphrase-robustness numbers below only cover exact/partial overlap, so they cannot show whether a result came from understanding the code vs. matching its name. Add answer-key/${dump.repo.name}/curated.questions.json with none-overlap paraphrases to close this gap.`;
+    warnings.push(msg);
+    onProgress({ phase: "done", msg: `Warning: ${msg}` });
+  }
+
   const report = {
     repo: { root: repoRoot, name: dump.repo.name, sandbox, files: dump.stats.files, loc: dump.repo.loc, symbols: dump.stats.symbols },
     retrievers: RETRIEVERS.map((r) => r.name),
@@ -153,6 +185,7 @@ export async function runEvaluation(repoRoot, opts = {}) {
     curatedCount: bank.counts.control,
     questionCounts: bank.counts,
     fairness,
+    warnings,
     generatedAt: new Date().toISOString(),
     summaryByRetriever,
     dumpStats: dump.stats,
