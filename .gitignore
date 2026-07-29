@@ -25,6 +25,14 @@ answer-key/*/
 tools/genQuestions.mjs
 tools/verifySemantic.mjs
 
+# Benchmark target repos must NEVER be committed here. They belong to other
+# people under their own licenses, and this repo publishes aggregate metrics
+# only, never third-party source. Keep clones outside the project entirely;
+# this is only a backstop for when one lands here by accident. A directory
+# convention rather than a list of names, so it does not rot as targets change.
+/repos/
+/test-repos/
+
 # OS / editor cruft
 .DS_Store
 Thumbs.db

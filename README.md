@@ -1,5 +1,9 @@
 # RetriEval
 
+> **Work in progress.** The scoring methodology is still being stress-tested and
+> will change. If you find an issue or want to contribute, open an issue or a
+> pull request, contributions are welcome.
+
 **A neutral benchmark for code retrieval.** Point it at a TypeScript/JavaScript
 repo and it answers one question, honestly: *when a developer asks "where's the
 code that does X?", how well does a given retriever find the right files, and
@@ -76,6 +80,17 @@ doing as it searches.
 
 This is early, and honest about it:
 
+- **Recall/precision are file-level, not symbol-level.** A retriever that
+  returns the right file but omits the actual symbol needed scores the same
+  as one that nails it exactly. The stricter symbol-aware check exists
+  internally for the Location category's composite score, but the headline
+  recall/precision numbers and the paraphrase-overlap table don't use it yet.
+- **The "none"-overlap paraphrase bucket** (queries that describe behavior
+  without naming the symbol or file, the strongest test against filename-matching)
+  can only be populated by hand-curated questions for a given repo. The
+  mechanical generator can't produce it, that would require the generator to
+  understand what the code does, not just its name. A run reports loudly when
+  this bucket is empty rather than silently omitting it.
 - **TypeScript / JavaScript only.** The answer key is built with ts-morph. Other
   languages need their own analyzer.
 - **The method is the product, not a leaderboard.** RetriEval is a way to
